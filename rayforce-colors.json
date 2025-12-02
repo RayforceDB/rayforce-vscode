@@ -1,0 +1,98 @@
+{
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": [
+          "entity.name.function.rayforce",
+          "keyword.control.rayforce"
+        ],
+        "settings": {
+          "foreground": "#4EC9B0",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": "keyword.other.rayforce",
+        "settings": {
+          "foreground": "#4EC9B0"
+        }
+      },
+      {
+        "scope": [
+          "keyword.operator.comparison.rayforce",
+          "keyword.operator.arithmetic.rayforce",
+          "keyword.operator.other.rayforce"
+        ],
+        "settings": {
+          "foreground": "#4DAEC9"
+        }
+      },
+      {
+        "scope": "string.quoted.double.rayforce",
+        "settings": {
+          "foreground": "#DCDCAA"
+        }
+      },
+      {
+        "scope": "constant.character.rayforce",
+        "settings": {
+          "foreground": "#6A9955"
+        }
+      },
+      {
+        "scope": "entity.name.symbol.quoted.rayforce",
+        "settings": {
+          "foreground": "#4FC1FF"
+        }
+      },
+      {
+        "scope": [
+          "punctuation.definition.brackets.rayforce",
+          "entity.name.tag.rayforce"
+        ],
+        "settings": {
+          "foreground": "#808080"
+        }
+      },
+      {
+        "scope": "comment.line.rayforce",
+        "settings": {
+          "foreground": "#6A9955"
+        }
+      },
+      {
+        "scope": [
+          "constant.numeric.integer.rayforce",
+          "constant.numeric.float.rayforce"
+        ],
+        "settings": {
+          "foreground": "#B5CEA8"
+        }
+      },
+      {
+        "scope": "constant.language.boolean.rayforce",
+        "settings": {
+          "foreground": "#569CD6"
+        }
+      },
+      {
+        "scope": "entity.name.type.rayforce",
+        "settings": {
+          "foreground": "#569CD6"
+        }
+      },
+      {
+        "scope": [
+          "constant.language.date.rayforce",
+          "constant.language.time.rayforce",
+          "constant.language.timestamp.rayforce",
+          "constant.language.guid.rayforce"
+        ],
+        "settings": {
+          "foreground": "#CE9178"
+        }
+      }
+    ]
+  }
+}
+

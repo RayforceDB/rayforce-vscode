@@ -1,0 +1,42 @@
+{
+  "name": "rayforce-vscode",
+  "displayName": "Rayforce Language Support",
+  "description": "Syntax highlighting for Rayforce language (Rayfall)",
+  "version": "0.1.0",
+  "publisher": "RayforceDB",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "rayforce",
+        "aliases": [
+          "Rayforce",
+          "rfl",
+          "rf"
+        ],
+        "extensions": [
+          ".rfl",
+          ".rf"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "rayforce",
+        "scopeName": "source.rayforce",
+        "path": "./syntaxes/rayforce.tmLanguage.json"
+      }
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RayforceDB/rayforce-vscode"
+  },
+  "license": "MIT"
+}

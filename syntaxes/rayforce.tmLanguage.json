@@ -1,0 +1,214 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Rayforce",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#character-literals"
+    },
+    {
+      "include": "#quoted-symbols"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#brackets"
+    },
+    {
+      "include": "#keyword-identifiers"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#booleans"
+    },
+    {
+      "include": "#type-names"
+    },
+    {
+      "include": "#temporal-types"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.rayforce",
+          "begin": ";;",
+          "end": "$",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.rayforce"
+            }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.rayforce",
+          "begin": "\"",
+          "end": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.rayforce"
+            }
+          },
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.rayforce"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.rayforce",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "character-literals": {
+      "patterns": [
+        {
+          "name": "constant.character.rayforce",
+          "match": "'(?:''|[^'])'"
+        }
+      ]
+    },
+    "quoted-symbols": {
+      "patterns": [
+        {
+          "name": "entity.name.type.rayforce",
+          "match": "'(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8)\\b"
+        },
+        {
+          "name": "entity.name.symbol.quoted.rayforce",
+          "begin": "'(?=[a-zA-Z0-9_-])",
+          "end": "(?=[^a-zA-Z0-9_-])",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.symbol.rayforce"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.rayforce",
+          "match": "\\b(fn|do|set|self|let|if|try|return|exit|and|or|quote|raise)\\b"
+        },
+        {
+          "name": "keyword.other.rayforce",
+          "match": "\\b(take|by|from|where|sym|resolve|nil\\?)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.rayforce",
+          "match": "\\b(get|read|parse|eval|load|type|til|reverse|distinct|group|sum|avg|med|dev|min|max|round|floor|ceil|first|last|count|not|iasc|idesc|rank|asc|desc|guid|neg|where|key|value|ser|de|hclose|rc|select|update|date|time|timestamp|show|meta|os-get-var|system|unify|raze|diverse|row|write|at|find|concat|remove|filter|take|in|within|sect|except|union|rand|as|xasc|xdesc|xrank|enum|xbar|os-set-var|split|bin|binr|env|timeit|memstat|gc|list|enlist|format|print|println|apply|map|pmap|map-left|map-right|fold|fold-left|fold-right|scan|scan-left|scan-right|args|alter|modify|insert|upsert|read-csv|left-join|inner-join|asof-join|window-join|window-join1|return|hopen|exit|loadfn|timer|set-splayed|get-splayed|set-parted|get-parted|internals|sysinfo)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.rayforce",
+          "match": "(==|!=|<=|>=|<|>|like)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.rayforce",
+          "match": "(\\+|\\-|\\*|/|%|div)"
+        },
+        {
+          "name": "keyword.operator.other.rayforce",
+          "match": "[&|^~._?]"
+        }
+      ]
+    },
+    "brackets": {
+      "patterns": [
+        {
+          "name": "punctuation.definition.brackets.rayforce",
+          "match": "[()\\[\\]{}]"
+        }
+      ]
+    },
+    "keyword-identifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.tag.rayforce",
+          "match": ":[a-zA-Z0-9_?\\-]+"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.integer.rayforce",
+          "match": "\\b-?\\d+\\b"
+        },
+        {
+          "name": "constant.numeric.float.rayforce",
+          "match": "\\b-?\\d+\\.\\d+\\b"
+        }
+      ]
+    },
+    "booleans": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.rayforce",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "type-names": {
+      "patterns": [
+        {
+          "name": "entity.name.type.rayforce",
+          "match": "\\b(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8)\\b"
+        }
+      ]
+    },
+    "temporal-types": {
+      "patterns": [
+        {
+          "name": "constant.language.date.rayforce",
+          "match": "\\b\\d{4}\\.\\d{2}\\.\\d{2}\\b"
+        },
+        {
+          "name": "constant.language.time.rayforce",
+          "match": "\\b\\d{1,2}:\\d{2}:\\d{2}(?::\\d{3})?\\b"
+        },
+        {
+          "name": "constant.language.timestamp.rayforce",
+          "match": "\\b\\d{4}\\.\\d{2}\\.\\d{2}T\\d{1,2}:\\d{2}:\\d{2}(?::\\d{3})?\\b"
+        },
+        {
+          "name": "constant.language.guid.rayforce",
+          "match": "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b"
+        }
+      ]
+    }
+  },
+  "scopeName": "source.rayforce"
+}
+
