@@ -1,14 +1,20 @@
 {
   "name": "rayforce-vscode",
-  "displayName": "Rayforce Language Support",
-  "description": "Syntax highlighting for Rayforce language (Rayfall)",
-  "version": "0.1.0",
+  "displayName": "RayforceDB Environment Manager",
+  "description": "Manager for local and remote RayforceDB runtimes.",
+  "version": "0.3.0",
+  "icon": "assets/logo.png",
   "publisher": "RayforceDB",
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
     "Programming Languages"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onLanguage:rayforce",
+    "onView:rayforceInstances"
   ],
   "contributes": {
     "languages": [
@@ -32,7 +38,176 @@
         "scopeName": "source.rayforce",
         "path": "./syntaxes/rayforce.tmLanguage.json"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "rayforce-explorer",
+          "title": "Rayforce",
+          "icon": "assets/logo.png"
+        }
+      ]
+    },
+    "views": {
+      "rayforce-explorer": [
+        {
+          "id": "rayforceInstances",
+          "name": "Running Instances",
+          "icon": "assets/logo.png",
+          "contextualTitle": "Rayforce Instances"
+        },
+        {
+          "type": "webview",
+          "id": "rayforceProcessInfo",
+          "name": "Connected Process",
+          "contextualTitle": "Connected Process Info"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "rayforce.refreshInstances",
+        "title": "Refresh Instances",
+        "category": "Rayforce",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "rayforce.connectToInstance",
+        "title": "Connect to Instance",
+        "category": "Rayforce",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "rayforce.connectToRemote",
+        "title": "Connect to Remote",
+        "category": "Rayforce",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "rayforce.addRemote",
+        "title": "Add Remote Connection",
+        "category": "Rayforce",
+        "icon": "$(add)"
+      },
+      {
+        "command": "rayforce.removeRemote",
+        "title": "Remove Remote Connection",
+        "category": "Rayforce",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "rayforce.disconnectFromInstance",
+        "title": "Disconnect from Instance",
+        "category": "Rayforce",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "rayforce.executeStatement",
+        "title": "Execute Statement in Connected Instance",
+        "category": "Rayforce",
+        "icon": "$(play)"
+      },
+      {
+        "command": "rayforce.openRepl",
+        "title": "Open REPL",
+        "category": "Rayforce",
+        "icon": "$(terminal)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "rayforce.addRemote",
+          "when": "view == rayforceInstances",
+          "group": "navigation"
+        },
+        {
+          "command": "rayforce.openRepl",
+          "when": "view == rayforceInstances",
+          "group": "navigation"
+        },
+        {
+          "command": "rayforce.refreshInstances",
+          "when": "view == rayforceInstances",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "rayforce.openRepl",
+          "when": "view == rayforceInstances && viewItem == rayforceInstance",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.connectToInstance",
+          "when": "view == rayforceInstances && viewItem == rayforceInstance",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.openRepl",
+          "when": "view == rayforceInstances && viewItem == rayforceInstanceConnected",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.disconnectFromInstance",
+          "when": "view == rayforceInstances && viewItem == rayforceInstanceConnected",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.openRepl",
+          "when": "view == rayforceInstances && viewItem == rayforceRemote",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.connectToRemote",
+          "when": "view == rayforceInstances && viewItem == rayforceRemote",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.removeRemote",
+          "when": "view == rayforceInstances && viewItem == rayforceRemote",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.openRepl",
+          "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.disconnectFromInstance",
+          "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.removeRemote",
+          "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
+          "group": "inline"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "rayforce.executeStatement",
+          "when": "editorLangId == rayforce",
+          "group": "navigation"
+        },
+        {
+          "command": "rayforce.refreshInstances",
+          "when": "editorLangId == rayforce",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^5.0.0"
   },
   "repository": {
     "type": "git",

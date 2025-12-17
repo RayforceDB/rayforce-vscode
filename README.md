@@ -1,15 +1,7 @@
-# Rayforce Language Support for VS Code
+# RayforceDB Environment for VS Code
 
-Syntax highlighting extension for the Rayfall (`.rfl`, `.rl`)
+Runtime instance manager for both local and remote RayforceDB instances.
 
-## Installation
-
-```bash
-make install-vscode
-```
-
-OR
-
-```bash
-make install-cursor
-```
+<picture>
+  <img alt="RayforceDB Demo" src="assets/demo.png">
+</picture>

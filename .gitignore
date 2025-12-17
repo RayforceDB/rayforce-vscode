@@ -1,8 +1,6 @@
-# VS Code
-.vscode/
-
-# Extension packaging
+node_modules/
+out/
 *.vsix
-
-# OS
 .DS_Store
+.vscode-test/
+.rayhist.dat
