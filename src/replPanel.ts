@@ -28,6 +28,7 @@ export class RayforceReplPanel {
     private history: HistoryEntry[] = [];
     private envData: EnvEntry[] = [];
     private showEnv: boolean = true;
+    private envWidth: number = 280;
 
     private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
         this.panel = panel;
@@ -134,6 +135,9 @@ export class RayforceReplPanel {
             case 'toggleEnv':
                 this.showEnv = !this.showEnv;
                 this.updateWebview();
+                break;
+            case 'setEnvWidth':
+                this.envWidth = message.width;
                 break;
             case 'inspectVar':
                 await this.inspectVariable(message.name);
@@ -388,13 +392,31 @@ export class RayforceReplPanel {
         }
 
         .env-panel {
-            width: ${this.showEnv ? '280px' : '0'};
+            width: ${this.showEnv ? `${this.envWidth}px` : '0'};
+            min-width: ${this.showEnv ? '150px' : '0'};
+            max-width: ${this.showEnv ? '500px' : '0'};
             background: var(--bg-secondary);
             border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: width 0.2s ease;
+            position: relative;
+        }
+
+        .env-resize-handle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: ew-resize;
+            background: transparent;
+            z-index: 10;
+        }
+
+        .env-resize-handle:hover,
+        .env-resize-handle.dragging {
+            background: var(--accent);
         }
 
         .env-header {
@@ -810,7 +832,8 @@ export class RayforceReplPanel {
     </div>
 
     ${this.showEnv ? `
-    <div class="env-panel">
+    <div class="env-panel" id="env-panel">
+        <div class="env-resize-handle" id="env-resize-handle"></div>
         <div class="env-header">
             <span class="env-title">Environment</span>
             <div class="env-actions">
@@ -1119,6 +1142,43 @@ export class RayforceReplPanel {
 
         function refreshEnv() {
             vscode.postMessage({ command: 'refreshEnv' });
+        }
+
+        // Environment panel resize
+        const envPanel = document.getElementById('env-panel');
+        const resizeHandle = document.getElementById('env-resize-handle');
+        
+        if (envPanel && resizeHandle) {
+            let isResizing = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            resizeHandle.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                startX = e.clientX;
+                startWidth = envPanel.offsetWidth;
+                resizeHandle.classList.add('dragging');
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                const delta = startX - e.clientX;
+                const newWidth = Math.min(500, Math.max(150, startWidth + delta));
+                envPanel.style.width = newWidth + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    resizeHandle.classList.remove('dragging');
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                    vscode.postMessage({ command: 'setEnvWidth', width: envPanel.offsetWidth });
+                }
+            });
         }
 
         function inspectVar(name) {

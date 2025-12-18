@@ -184,9 +184,9 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
 
     private async findRayforceProcesses(): Promise<RayforceProcess[]> {
         return new Promise((resolve) => {
-            // ps aux columns: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
-            cp.exec('ps aux', (error, stdout) => {
-                if (error) {
+            // Use grep to only get rayforce processes directly
+            cp.exec('ps aux | grep -E "[r]ayforce.*-p"', (error, stdout) => {
+                if (error || !stdout.trim()) {
                     resolve([]);
                     return;
                 }
@@ -210,14 +210,12 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
                     const fullCommand = commandParts[0] || '';
                     const executableName = path.basename(fullCommand).toLowerCase();
                     
-                    // Only match actual rayforce executable (not vscode, cursor, or other tools)
                     if (executableName !== 'rayforce') {
                         continue;
                     }
 
                     const args = commandParts.slice(1).join(' ');
                     
-                    // Check for port argument - rayforce runtimes MUST have a port to accept connections
                     const portMatch = args.match(/(?:-p|--port)\s+(\d+)/);
                     if (!portMatch) {
                         continue;

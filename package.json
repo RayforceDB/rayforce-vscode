@@ -1,6 +1,6 @@
 {
   "name": "rayforce-vscode",
-  "displayName": "Rayforce",
+  "displayName": "RayforceDB",
   "description": "Runtime Manager for RayforceDB",
   "version": "0.1.0",
   "publisher": "RayforceDB",
