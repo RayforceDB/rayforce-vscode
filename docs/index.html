@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RayforceDB for VS Code - Runtime Manager & Syntax Highlighting</title>
+    <meta name="description"
+        content="VS Code extension for RayforceDB - Runtime manager, REPL integration, process monitoring, and syntax highlighting for .rfl and .rf files.">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-icons-font@v14/font/simple-icons.min.css">
+    <style>
+        :root {
+            --primary-navy: #04233b;
+            --primary-navy-light: #0a3a5c;
+            --primary-navy-dark: #021828;
+            --accent-golden: #e9a033;
+            --accent-golden-light: #f0b85a;
+            --text-primary: #333;
+            --text-secondary: #555;
+            --text-muted: #757575;
+            --bg-light: #f8f9fa;
+            --bg-white: #ffffff;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            background: var(--bg-white);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--primary-navy);
+            padding: 0.75rem 2rem;
+            z-index: 1000;
+            box-shadow: var(--shadow-md);
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: white;
+        }
+
+        .header-logo img {
+            height: 32px;
+            width: auto;
+        }
+
+        .header-logo span {
+            font-size: 0.9rem;
+            font-weight: 500;
+            opacity: 0.9;
+            padding: 0.25rem 0.6rem;
+            background: rgba(233, 160, 51, 0.2);
+            border-radius: 4px;
+            color: var(--accent-golden);
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .header-nav a {
+            color: rgba(255, 255, 255, 0.85);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .header-nav a:hover {
+            color: var(--accent-golden);
+        }
+
+        .header-nav .github-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1rem;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--accent-golden);
+        }
+
+        /* Show sun in dark mode, moon in light mode */
+        .theme-toggle .fa-sun {
+            display: none;
+        }
+
+        .theme-toggle .fa-moon {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .fa-sun {
+            display: block;
+        }
+
+        [data-theme="dark"] .theme-toggle .fa-moon {
+            display: none;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--bg-white) 0%, var(--bg-light) 50%, var(--bg-white) 100%);
+            padding: 8rem 2rem 4rem;
+            position: relative;
+            overflow: hidden;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(233, 160, 51, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(4, 35, 59, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-content h1 {
+            font-size: 3rem;
+            font-weight: 300;
+            color: var(--primary-navy);
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-content h1 strong {
+            color: var(--accent-golden);
+            font-weight: 700;
+        }
+
+        .hero-logo {
+            max-width: 320px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Light/dark mode logo switching */
+        .light-only {
+            display: inline-block;
+        }
+
+        .dark-only {
+            display: none;
+        }
+
+        [data-theme="dark"] .light-only {
+            display: none;
+        }
+
+        [data-theme="dark"] .dark-only {
+            display: inline-block;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            max-width: 500px;
+        }
+
+        .hero-socials {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero-socials a {
+            color: var(--primary-navy);
+            opacity: 0.5;
+            font-size: 1.4rem;
+            transition: all 0.25s ease;
+        }
+
+        .hero-socials a:hover {
+            opacity: 1;
+            color: var(--accent-golden);
+            transform: translateY(-2px);
+        }
+
+        [data-theme="dark"] .hero-socials a {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        [data-theme="dark"] .hero-socials a:hover {
+            color: var(--accent-golden);
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--primary-navy);
+            color: white;
+            border-color: var(--primary-navy);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-golden);
+            border-color: var(--accent-golden);
+            color: var(--primary-navy);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(233, 160, 51, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-navy);
+            border-color: var(--primary-navy);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-navy);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .hero-image {
+            position: relative;
+        }
+
+        .hero-image img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .hero-badge {
+            position: absolute;
+            top: -1rem;
+            right: -1rem;
+            background: var(--accent-golden);
+            color: var(--primary-navy);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 5rem 2rem;
+            background: var(--bg-white);
+        }
+
+        .features-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: var(--primary-navy);
+            margin-bottom: 1rem;
+        }
+
+        .section-header h2 strong {
+            color: var(--accent-golden);
+            font-weight: 700;
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--bg-white);
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--accent-golden);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent-golden), var(--accent-golden-light));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-icon i {
+            font-size: 1.5rem;
+            color: var(--primary-navy);
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-navy);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Installation Section */
+        .installation {
+            padding: 5rem 2rem;
+            background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
+            color: white;
+        }
+
+        .installation-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .installation h2 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 1rem;
+        }
+
+        .installation h2 strong {
+            color: var(--accent-golden);
+            font-weight: 700;
+        }
+
+        .installation>p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 3rem;
+        }
+
+        .install-methods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            text-align: left;
+        }
+
+        .install-method {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .install-method h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .install-method h3 i {
+            color: var(--accent-golden);
+        }
+
+        .install-method p {
+            opacity: 0.85;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .install-code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+
+        .install-code code {
+            color: var(--accent-golden-light);
+        }
+
+        /* Syntax Section */
+        .syntax {
+            padding: 5rem 2rem;
+            background: var(--bg-light);
+        }
+
+        .syntax-inner {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .syntax-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .syntax-card {
+            background: var(--bg-white);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .syntax-card-header {
+            background: var(--primary-navy);
+            color: white;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .syntax-card-header i {
+            color: var(--accent-golden);
+        }
+
+        .syntax-card pre {
+            padding: 1.5rem;
+            margin: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            background: #1e1e2e;
+            color: #f8f8f2;
+        }
+
+        .syntax-card pre .comment {
+            color: #6272a4;
+            font-style: italic;
+        }
+
+        .syntax-card pre .keyword {
+            color: #50fa7b;
+        }
+
+        .syntax-card pre .string {
+            color: #f1fa8c;
+        }
+
+        .syntax-card pre .number {
+            color: #ffb86c;
+        }
+
+        .syntax-card pre .symbol {
+            color: #bd93f9;
+        }
+
+        .syntax-card pre .func {
+            color: #8be9fd;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--primary-navy-dark);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 3rem 2rem;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-logo img {
+            height: 32px;
+            opacity: 0.8;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-golden);
+        }
+
+        .footer-social {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .footer-social a {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.25rem;
+            transition: all 0.2s ease;
+        }
+
+        .footer-social a:hover {
+            color: var(--accent-golden);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-content p {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .hero-socials {
+                justify-content: center;
+            }
+
+            .hero-image {
+                order: -1;
+            }
+
+            .hero-badge {
+                top: -0.5rem;
+                right: 1rem;
+            }
+
+            .syntax-demo {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .header-inner {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .hero {
+                padding: 7rem 1rem 3rem;
+            }
+
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+
+            .hero-logo {
+                max-width: 240px;
+            }
+
+            .section-header h2,
+            .installation h2 {
+                font-size: 1.8rem;
+            }
+
+            .footer-inner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* ==================== */
+        /* DARK MODE THEME      */
+        /* ==================== */
+        [data-theme="dark"] body {
+            background: #021828;
+            color: #f0f0f0;
+        }
+
+        /* Hero */
+        [data-theme="dark"] .hero {
+            background: linear-gradient(135deg, #021828 0%, #04233b 50%, #021828 100%);
+        }
+
+        [data-theme="dark"] .hero::before {
+            background:
+                radial-gradient(circle at 20% 80%, rgba(233, 160, 51, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(233, 160, 51, 0.08) 0%, transparent 50%);
+        }
+
+        [data-theme="dark"] .hero-content h1 {
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .hero-content p {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        [data-theme="dark"] .hero-image img {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Buttons in dark mode */
+        [data-theme="dark"] .btn-primary {
+            background: var(--accent-golden);
+            border-color: var(--accent-golden);
+            color: var(--primary-navy);
+        }
+
+        [data-theme="dark"] .btn-primary:hover {
+            background: var(--accent-golden-light);
+            border-color: var(--accent-golden-light);
+            box-shadow: 0 4px 12px rgba(233, 160, 51, 0.4);
+        }
+
+        [data-theme="dark"] .btn-secondary {
+            border-color: rgba(255, 255, 255, 0.5);
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+
+        /* Features */
+        [data-theme="dark"] .features {
+            background: #021828;
+        }
+
+        [data-theme="dark"] .section-header h2 {
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .section-header p {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        [data-theme="dark"] .feature-card {
+            background: #0a3a5c;
+            border-color: #0a3a5c;
+        }
+
+        [data-theme="dark"] .feature-card:hover {
+            border-color: var(--accent-golden);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="dark"] .feature-card h3 {
+            color: #ffffff;
+        }
+
+        [data-theme="dark"] .feature-card p {
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        [data-theme="dark"] .feature-card code {
+            background: rgba(233, 160, 51, 0.2);
+            color: var(--accent-golden-light);
+        }
+
+        /* Syntax section */
+        [data-theme="dark"] .syntax {
+            background: #04233b;
+        }
+
+        [data-theme="dark"] .syntax-card {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="https://rayforcedb.com" class="header-logo" target="_blank">
+                <img src="images/logo_light_full.svg" alt="RayforceDB">
+                <span>VS Code Extension</span>
+            </a>
+            <nav class="header-nav">
+                <a href="#features">Features</a>
+                <a href="#installation">Install</a>
+                <a href="#syntax">Syntax</a>
+                <a href="https://github.com/RayforceDB/rayforce-vscode" class="github-link" target="_blank">
+                    <i class="fab fa-github"></i> GitHub
+                </a>
+                <button class="theme-toggle" id="theme-toggle" title="Toggle theme">
+                    <i class="fas fa-sun"></i>
+                    <i class="fas fa-moon"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="hero-content">
+                <img src="images/logo_dark_full.svg" alt="RayforceDB" class="hero-logo light-only">
+                <img src="images/logo_light_full.svg" alt="RayforceDB" class="hero-logo dark-only">
+                <h1>VS Code <strong>Extension</strong></h1>
+                <p>Connect to running instances, monitor CPU and memory, send commands via interactive REPL, and enjoy
+                    full syntax highlighting for Rayfall code.</p>
+                <div class="hero-socials">
+                    <a href="https://github.com/singaraiona" target="_blank" title="GitHub"><i
+                            class="fab fa-github"></i></a>
+                    <a href="https://x.com/RayforceDB" target="_blank" title="X (Twitter)"><i
+                            class="fab fa-x-twitter"></i></a>
+                    <a href="https://www.reddit.com/r/rayforcedb/" target="_blank" title="Reddit"><i
+                            class="fab fa-reddit"></i></a>
+                    <a href="https://rayforcedb.zulipchat.com/join/l33sichu4vp7nf77hgdul4om/" target="_blank"
+                        title="Zulip Chat"><i class="si si-zulip"></i></a>
+                </div>
+                <div class="hero-buttons">
+                    <a href="https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode"
+                        class="btn btn-primary" target="_blank">
+                        <i class="fas fa-download"></i> Install Extension
+                    </a>
+                    <a href="https://github.com/RayforceDB/rayforce-vscode" class="btn btn-secondary" target="_blank">
+                        <i class="fab fa-github"></i> View Source
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="images/demo.png" alt="RayforceDB VS Code Extension Demo">
+                <span class="hero-badge"><i class="fas fa-bolt"></i> v0.1.0</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="features-inner">
+            <div class="section-header">
+                <h2>Everything you need to <strong>develop faster</strong></h2>
+                <p>A complete development environment for RayforceDB, right inside VS Code.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h3>Instance Manager</h3>
+                    <p>View and connect to running local and remote RayforceDB instances. Manage multiple connections
+                        from the sidebar.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Process Monitoring</h3>
+                    <p>Real-time CPU and memory usage monitoring for local instances. Keep track of resource consumption
+                        at a glance.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <h3>Interactive REPL</h3>
+                    <p>Send commands directly to connected instances via an integrated REPL panel. Execute selections
+                        with Ctrl+Enter.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>Syntax Highlighting</h3>
+                    <p>Full syntax highlighting for <code>.rfl</code> and <code>.rf</code> files. Rayfall code has never
+                        looked better.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                    <h3>Environment Inspector</h3>
+                    <p>Introspect environment variables and see what's defined in your connected RayforceDB instance.
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-plug"></i>
+                    </div>
+                    <h3>Remote Connections</h3>
+                    <p>Connect to remote RayforceDB instances. Add, remove, and manage remote hosts with ease.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section class="installation" id="installation">
+        <div class="installation-inner">
+            <h2>Get started in <strong>seconds</strong></h2>
+            <p>Install the extension and connect to your first RayforceDB instance.</p>
+            <div class="install-methods">
+                <div class="install-method">
+                    <h3><i class="fas fa-store"></i> VS Code Marketplace</h3>
+                    <p>The easiest way to install. Search for "Rayforce" in the VS Code extensions panel or click the
+                        button below.</p>
+                    <a href="https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode"
+                        class="btn btn-primary" target="_blank" style="margin-top: 0.5rem;">
+                        <i class="fas fa-external-link-alt"></i> Open Marketplace
+                    </a>
+                </div>
+                <div class="install-method">
+                    <h3><i class="fas fa-keyboard"></i> Quick Open</h3>
+                    <p>Use VS Code Quick Open (Ctrl+P) and paste the following command:</p>
+                    <div class="install-code">
+                        <code>ext install RayforceDB.rayforce-vscode</code>
+                    </div>
+                </div>
+                <div class="install-method">
+                    <h3><i class="fas fa-terminal"></i> Command Line</h3>
+                    <p>Install directly from the terminal using the VS Code CLI:</p>
+                    <div class="install-code">
+                        <code>code --install-extension RayforceDB.rayforce-vscode</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Syntax Highlighting Demo -->
+    <section class="syntax" id="syntax">
+        <div class="syntax-inner">
+            <div class="section-header">
+                <h2>Beautiful <strong>syntax highlighting</strong></h2>
+                <p>Write Rayfall code with full language support for .rfl and .rf files.</p>
+            </div>
+            <div class="syntax-demo">
+                <div class="syntax-card">
+                    <div class="syntax-card-header">
+                        <i class="fas fa-file-code"></i> example.rf
+                    </div>
+                    <pre><span class="comment">; Create a table</span>
+(<span class="keyword">set</span> employees (<span class="func">table</span> [name dept salary]
+  (<span class="func">list</span>
+    (<span class="func">list</span> <span class="string">"Alice"</span> <span class="string">"Bob"</span> <span class="string">"Charlie"</span>)
+    [<span class="symbol">'IT</span> <span class="symbol">'HR</span> <span class="symbol">'IT</span>]
+    [<span class="number">75000</span> <span class="number">65000</span> <span class="number">85000</span>])))
+
+<span class="comment">; Query with filtering</span>
+(<span class="keyword">select</span> {
+  name: name
+  salary: salary
+  from: employees
+  where: (<span class="func">></span> salary <span class="number">70000</span>)})</pre>
+                </div>
+                <div class="syntax-card">
+                    <div class="syntax-card-header">
+                        <i class="fas fa-file-code"></i> queries.rfl
+                    </div>
+                    <pre><span class="comment">; Join two tables</span>
+(<span class="keyword">set</span> result
+  (<span class="func">left-join</span> [order_id]
+    trades orders))
+
+<span class="comment">; Aggregate by department</span>
+(<span class="keyword">select</span> {
+  avg_salary: (<span class="func">avg</span> salary)
+  headcount: (<span class="func">count</span> name)
+  from: employees
+  by: dept})
+
+<span class="comment">; Update salaries</span>
+(<span class="func">update</span> {
+  salary: (<span class="func">*</span> salary <span class="number">1.1</span>)
+  from: employees
+  where: (<span class="func">=</span> dept <span class="symbol">'IT</span>)})</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-logo">
+                <img src="images/logo_light_full.svg" alt="RayforceDB">
+                <span>© 2025 RayforceDB</span>
+            </div>
+            <div class="footer-links">
+                <a href="https://rayforcedb.com" target="_blank">Documentation</a>
+                <a href="https://github.com/RayforceDB/rayforce-vscode" target="_blank">GitHub</a>
+                <a href="https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode"
+                    target="_blank">Marketplace</a>
+            </div>
+            <div class="footer-social">
+                <a href="https://github.com/singaraiona" target="_blank" title="GitHub">
+                    <i class="fab fa-github"></i>
+                </a>
+                <a href="https://x.com/RayforceDB" target="_blank" title="X (Twitter)">
+                    <i class="fab fa-x-twitter"></i>
+                </a>
+                <a href="https://www.reddit.com/r/rayforcedb/" target="_blank" title="Reddit">
+                    <i class="fab fa-reddit"></i>
+                </a>
+                <a href="https://rayforcedb.zulipchat.com/join/l33sichu4vp7nf77hgdul4om/" target="_blank"
+                    title="Zulip Chat">
+                    <i class="si si-zulip"></i>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+
+        // Check for saved theme preference or system preference
+        function getPreferredTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                return savedTheme;
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        // Apply theme
+        function setTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        // Initialize theme
+        setTheme(getPreferredTheme());
+
+        // Toggle theme on button click
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+        });
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+    </script>
+</body>
+
+</html>

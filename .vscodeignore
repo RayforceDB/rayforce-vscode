@@ -12,3 +12,5 @@ Makefile
 **/.DS_Store
 .rayhist.dat
 package-lock.json
+docs/**
+.github/**
