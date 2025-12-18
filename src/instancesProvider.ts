@@ -166,6 +166,32 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
         return this.context.globalState.get<RemoteConnection[]>('rayforce.remoteConnections', []);
     }
 
+    async getAvailableInstances(): Promise<{ label: string; host: string; port: number; isRemote: boolean }[]> {
+        const instances: { label: string; host: string; port: number; isRemote: boolean }[] = [];
+        
+        const processes = await this.findRayforceProcesses();
+        for (const proc of processes.sort((a, b) => a.port - b.port)) {
+            instances.push({
+                label: `localhost:${proc.port} (PID ${proc.pid})`,
+                host: 'localhost',
+                port: proc.port,
+                isRemote: false
+            });
+        }
+        
+        const remotes = this.getSavedRemotes();
+        for (const remote of remotes.sort((a, b) => a.port - b.port)) {
+            instances.push({
+                label: `${remote.host}:${remote.port} (remote)`,
+                host: remote.host,
+                port: remote.port,
+                isRemote: true
+            });
+        }
+        
+        return instances;
+    }
+
     async addRemoteConnection(host: string, port: number): Promise<void> {
         const remotes = this.getSavedRemotes();
         if (!remotes.find(r => r.host === host && r.port === port)) {

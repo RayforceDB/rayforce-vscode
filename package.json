@@ -53,7 +53,7 @@
         {
           "id": "rayforce-explorer",
           "title": "Rayforce",
-          "icon": "assets/logo.png"
+          "icon": "assets/logo.svg"
         }
       ]
     },
@@ -112,9 +112,30 @@
         "title": "Open REPL",
         "category": "Rayforce",
         "icon": "$(terminal)"
+      },
+      {
+        "command": "rayforce.executeSelection",
+        "title": "Execute Selection in RayforceDB Instance",
+        "category": "Rayforce",
+        "icon": "$(play)"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "rayforce.executeSelection",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "editorTextFocus && editorLangId == rayforce"
       }
     ],
     "menus": {
+      "editor/context": [
+        {
+          "command": "rayforce.executeSelection",
+          "when": "editorLangId == rayforce",
+          "group": "navigation"
+        }
+      ],
       "view/title": [
         {
           "command": "rayforce.addRemote",

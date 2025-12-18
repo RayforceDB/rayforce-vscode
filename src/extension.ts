@@ -120,6 +120,49 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    const executeSelectionCommand = vscode.commands.registerCommand(
+        'rayforce.executeSelection',
+        async () => {
+            const editor = vscode.window.activeTextEditor;
+            if (!editor) {
+                vscode.window.showWarningMessage('No active editor');
+                return;
+            }
+
+            const selection = editor.selection;
+            const text = selection.isEmpty 
+                ? editor.document.lineAt(selection.active.line).text
+                : editor.document.getText(selection);
+
+            if (!text.trim()) {
+                vscode.window.showWarningMessage('No text selected');
+                return;
+            }
+
+            const instances = await instancesProvider.getAvailableInstances();
+            if (instances.length === 0) {
+                vscode.window.showWarningMessage('No Rayforce instances available');
+                return;
+            }
+
+            const selected = await vscode.window.showQuickPick(
+                instances.map(i => ({ label: i.label, instance: i })),
+                { placeHolder: 'Select Rayforce instance to execute on' }
+            );
+
+            if (!selected) return;
+
+            const panel = RayforceReplPanel.createOrShow(context.extensionUri);
+            try {
+                await panel.connect(selected.instance.host, selected.instance.port);
+                await panel.execute(text.trim());
+            } catch (err) {
+                const message = err instanceof Error ? err.message : String(err);
+                vscode.window.showErrorMessage(`Failed to execute: ${message}`);
+            }
+        }
+    );
+
     context.subscriptions.push(
         treeView,
         processInfoView,
@@ -129,7 +172,8 @@ export async function activate(context: vscode.ExtensionContext) {
         addRemoteCommand,
         removeRemoteCommand,
         disconnectCommand,
-        openReplCommand
+        openReplCommand,
+        executeSelectionCommand
     );
 
     const refreshInterval = setInterval(() => {

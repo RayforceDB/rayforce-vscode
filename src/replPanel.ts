@@ -116,6 +116,12 @@ export class RayforceReplPanel {
         return this.port;
     }
 
+    public async execute(command: string): Promise<void> {
+        this.panel.reveal();
+        await this.executeCommand(command);
+        await this.refreshEnv();
+    }
+
     private async handleMessage(message: any): Promise<void> {
         switch (message.command) {
             case 'execute':
