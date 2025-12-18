@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
-import { RayforceIpcClient, isError, RayforceValue, RayforceDict } from './rayforceIpc';
-import { formatValueHtml, formatValueText, getPrettyPrintStyles, detectType, defaultConfig } from './prettyPrint';
+import { RayforceIpcClient, isError, RayforceValue, RayforceDict, RayforceError } from './rayforceIpc';
+import { formatValueHtml, formatValueText, getPrettyPrintStyles, detectType, defaultConfig, PaginationInfo } from './prettyPrint';
 
 interface EnvEntry {
     name: string;
@@ -9,10 +9,14 @@ interface EnvEntry {
 }
 
 interface HistoryEntry {
+    id: string;  // Unique ID for targeting pagination
     input: string;
     output: RayforceValue | string;  // Store raw value or string for system messages
     isError: boolean;
     isSystem: boolean;
+    totalCount?: number;  // Original count for paginated data
+    currentPage?: number;  // Current page (0-indexed)
+    pageSize?: number;     // Items per page
 }
 
 export class RayforceReplPanel {
@@ -24,12 +28,18 @@ export class RayforceReplPanel {
     private disposables: vscode.Disposable[] = [];
 
     private ipcClient: RayforceIpcClient | null = null;
+    private host: string | null = null;
     private port: number | null = null;
     private history: HistoryEntry[] = [];
     private envData: EnvEntry[] = [];
     private showEnv: boolean = true;
     private envWidth: number = 280;
     private connectionVersion: number = 0;  // Track connection changes to abort stale operations
+    private historyIdCounter: number = 0;  // For generating unique history entry IDs
+
+    private generateHistoryId(): string {
+        return `hist-${++this.historyIdCounter}`;
+    }
 
     private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
         this.panel = panel;
@@ -69,7 +79,9 @@ export class RayforceReplPanel {
     }
 
     public async connect(host: string, port: number): Promise<void> {
-        if (this.ipcClient && this.ipcClient.isConnected() && this.port === port) {
+        // If already connected to same host:port, just reveal
+        if (this.ipcClient && this.ipcClient.isConnected() && 
+            this.host === host && this.port === port) {
             this.panel.reveal();
             return;
         }
@@ -78,28 +90,37 @@ export class RayforceReplPanel {
         this.connectionVersion++;
         const currentVersion = this.connectionVersion;
 
-        if (this.ipcClient && this.port && this.port !== port) {
+        // Disconnect existing client
+        if (this.ipcClient) {
+            const wasConnected = this.ipcClient.isConnected();
             this.ipcClient.disconnect();
-            this.addSystemMessage(`Switching from localhost:${this.port}...`);
-        } else if (this.ipcClient) {
-            this.ipcClient.disconnect();
+            if (wasConnected && this.port !== port) {
+                this.addSystemMessage(`Switching from ${this.host || 'localhost'}:${this.port}...`);
+            }
         }
 
-        this.ipcClient = new RayforceIpcClient(host, port);
+        // Create new client
+        const newClient = new RayforceIpcClient(host, port);
+        this.ipcClient = newClient;
+        this.host = host;
         this.port = port;
 
         try {
-            await this.ipcClient.connect(5000);
+            await newClient.connect(5000);
 
-            // Check if connection changed while we were connecting
+            // If connection changed while we were connecting, clean up this connection
             if (this.connectionVersion !== currentVersion) {
+                newClient.disconnect();
                 return;
             }
 
-            this.addSystemMessage(`Connected to localhost:${port}`);
+            this.addSystemMessage(`Connected to ${host}:${port}`);
             await this.refreshEnv();
         } catch (err) {
-            // Check if connection changed while we were connecting
+            // Clean up on error
+            newClient.disconnect();
+            
+            // If connection changed while we were connecting, don't update state
             if (this.connectionVersion !== currentVersion) {
                 return;
             }
@@ -107,6 +128,7 @@ export class RayforceReplPanel {
             const message = err instanceof Error ? err.message : String(err);
             this.addSystemMessage(`Failed to connect: ${message}`, true);
             this.ipcClient = null;
+            this.host = null;
             this.port = null;
             this.envData = [];
             this.updateWebview();
@@ -123,6 +145,7 @@ export class RayforceReplPanel {
             this.addSystemMessage('Disconnected');
             this.updateWebview();
         }
+        this.host = null;
         this.port = null;
         this.envData = [];
     }
@@ -167,71 +190,118 @@ export class RayforceReplPanel {
             case 'inspectVar':
                 await this.inspectVariable(message.name);
                 break;
+            case 'changePage':
+                await this.changeTablePage(message.historyId, message.page, message.pageSize);
+                break;
+            case 'changePageSize':
+                await this.changeTablePageSize(message.historyId, message.pageSize);
+                break;
         }
     }
 
     private async refreshEnv(): Promise<void> {
         const currentVersion = this.connectionVersion;
 
-        if (!this.ipcClient || !this.ipcClient.isConnected()) {
+        if (!this.ipcClient) {
+            this.envData = [];
+            this.updateWebview();
+            return;
+        }
+        
+        if (!this.ipcClient.isConnected()) {
             this.envData = [];
             this.updateWebview();
             return;
         }
 
         try {
-            const result = await this.ipcClient.execute('(env)');
-
-            // Abort if connection changed
+            // Batch request: get keys and types in just 2 IPC calls instead of N+1
+            const keysResult = await this.ipcClient.execute('(key (env))');
+            
             if (this.connectionVersion !== currentVersion) return;
 
-            this.envData = this.parseEnvResult(result);
-        } catch (err) {
-            // Abort if connection changed
+            // Get all types in one call using (map type (value (env)))
+            const typesResult = await this.ipcClient.execute('(map type (value (env)))');
+            
             if (this.connectionVersion !== currentVersion) return;
 
+            // Parse keys (list of symbols)
+            const keys = this.parseEnvKeys(keysResult);
+            
+            // Parse types (list of symbols in same order as keys)
+            const types = this.parseEnvTypes(typesResult);
+
+            // Zip keys and types together
+            const entries: EnvEntry[] = [];
+            for (let i = 0; i < keys.length; i++) {
+                entries.push({
+                    name: keys[i],
+                    type: types[i] || '?',
+                    value: '' // Don't fetch value - only fetch on inspect
+                });
+            }
+
+            this.envData = entries;
+        } catch {
+            if (this.connectionVersion !== currentVersion) return;
             this.envData = [];
         }
 
         this.updateWebview();
     }
 
-    private parseEnvResult(result: RayforceValue): EnvEntry[] {
-        const entries: EnvEntry[] = [];
-
-        if (result && typeof result === 'object' && '_type' in result && result._type === 'dict') {
-            const dict = result as RayforceDict;
-            const keys = dict.keys;
-            const values = dict.values;
-
-            if (Array.isArray(keys) && Array.isArray(values)) {
-                for (let i = 0; i < keys.length; i++) {
-                    const key = keys[i];
-                    const val = values[i];
-
-                    const name = typeof key === 'symbol'
-                        ? Symbol.keyFor(key) || String(key)
-                        : String(key);
-
-                    // Skip internal/system variables
-                    if (name.startsWith('.')) continue;
-
-                    // Infer type from value (avoids expensive IPC calls)
-                    const type = this.inferType(val);
-                    const value = this.formatShortValue(val);
-                    entries.push({ name, type, value });
+    private parseEnvTypes(result: RayforceValue): string[] {
+        const types: string[] = [];
+        
+        if (Array.isArray(result)) {
+            for (const item of result) {
+                if (typeof item === 'symbol') {
+                    types.push(Symbol.keyFor(item) || String(item).replace('Symbol(', '').replace(')', ''));
+                } else if (typeof item === 'string') {
+                    types.push(item);
+                } else {
+                    types.push(String(item));
                 }
             }
         }
-
-        // Sort alphabetically
-        entries.sort((a, b) => a.name.localeCompare(b.name));
-
-        return entries;
+        
+        return types;
     }
 
-    private inferType(val: RayforceValue): string {
-        return detectType(val);
+    private parseEnvKeys(result: RayforceValue): string[] {
+        const keys: string[] = [];
+        
+        if (Array.isArray(result)) {
+            for (const item of result) {
+                let name: string | null = null;
+                if (typeof item === 'symbol') {
+                    // Rayforce symbols are JavaScript Symbol primitives
+                    name = Symbol.keyFor(item) || String(item);
+                } else if (typeof item === 'string') {
+                    name = item;
+                }
+                
+                // Skip internal/system variables (starting with .)
+                if (name && !name.startsWith('.')) {
+                    keys.push(name);
+                }
+            }
+        }
+        
+        // Sort alphabetically
+        keys.sort((a, b) => a.localeCompare(b));
+        
+        return keys;
+    }
+
+    private parseTypeName(result: RayforceValue): string {
+        if (typeof result === 'symbol') {
+            return Symbol.keyFor(result) || String(result);
+        }
+        if (typeof result === 'string') {
+            return result;
+        }
+        return String(result);
     }
 
     private formatShortValue(val: RayforceValue, maxLen: number = 30): string {
@@ -247,23 +317,161 @@ export class RayforceReplPanel {
             return;
         }
 
-        try {
-            const result = await this.ipcClient.execute(name);
+        // Use same logic as executeCommand - try wrapper first, fall back to raw
+        let useRawFallback = false;
 
-            // Abort if connection changed
+        try {
+            const wrappedCommand = this.wrapCommandForPreview(name);
+            const result = await this.ipcClient.execute(wrappedCommand);
+
             if (this.connectionVersion !== currentVersion) return;
 
-            this.history.push({
-                input: name,
-                output: result,
-                isError: isError(result),
-                isSystem: false
-            });
+            // Check for wrapper parse errors
+            if (isError(result) && (result as RayforceError).code === 2) {
+                useRawFallback = true;
+            } else if (!useRawFallback) {
+                let actualResult: RayforceValue = result;
+                let originalCount: number | null = null;
 
-            this.updateWebview();
-        } catch (err) {
-            // Ignore - connection likely changed
+                if (Array.isArray(result) && result.length === 3) {
+                    const [countVal, , dataVal] = result;
+                    
+                    if (typeof countVal === 'number') {
+                        originalCount = countVal;
+                    } else if (typeof countVal === 'bigint') {
+                        originalCount = Number(countVal);
+                    }
+                    
+                    actualResult = dataVal;
+                    
+                    if (originalCount !== null && originalCount > RayforceReplPanel.MAX_PREVIEW_ROWS) {
+                        if (typeof actualResult === 'object' && actualResult !== null && '_type' in actualResult) {
+                            if (actualResult._type === 'table') {
+                                (actualResult as any)._originalCount = originalCount;
+                            }
+                        } else if (Array.isArray(actualResult)) {
+                            (actualResult as any)._originalCount = originalCount;
+                        }
+                    }
+                }
+
+                const isPaginated = originalCount !== null && originalCount > RayforceReplPanel.MAX_PREVIEW_ROWS;
+                this.history.push({
+                    id: this.generateHistoryId(),
+                    input: name,
+                    output: actualResult,
+                    isError: isError(actualResult),
+                    isSystem: false,
+                    totalCount: isPaginated && originalCount !== null ? originalCount : undefined,
+                    currentPage: isPaginated ? 0 : undefined,
+                    pageSize: isPaginated ? RayforceReplPanel.MAX_PREVIEW_ROWS : undefined
+                });
+
+                this.updateWebview();
+                return;
+            }
+        } catch {
+            useRawFallback = true;
         }
+
+        // Fallback to raw execution
+        if (useRawFallback) {
+            try {
+                const result = await this.ipcClient.execute(name);
+                
+                if (this.connectionVersion !== currentVersion) return;
+
+                this.history.push({
+                    id: this.generateHistoryId(),
+                    input: name,
+                    output: result,
+                    isError: isError(result),
+                    isSystem: false
+                });
+
+                this.updateWebview();
+            } catch {
+                // Ignore - connection likely changed
+            }
+        }
+    }
+
+    // Maximum rows to fetch for tables/lists to avoid huge data transfers
+    // Keep this low for responsive UI - user can export full data if needed
+    private static readonly MAX_PREVIEW_ROWS = 10;
+
+    /**
+     * Wrap a command to truncate large results server-side before IPC transfer.
+     * Uses an anonymous function with let bindings (let only works inside fn).
+     * Returns [original_count, type, truncated_result] as a list.
+     */
+    private wrapCommandForPreview(command: string): string {
+        const maxRows = RayforceReplPanel.MAX_PREVIEW_ROWS;
+        // Rayfall: (take collection [start count]) takes count items from start index
+        return `((fn [] (let __pr_r ${command}) (let __pr_t (type __pr_r)) (let __pr_c (if (or (== __pr_t 'TABLE) (== __pr_t 'LIST)) (count __pr_r) 0)) (list __pr_c __pr_t (if (> __pr_c ${maxRows}) (take __pr_r [0 ${maxRows}]) __pr_r))))`;
+    }
+
+    /**
+     * Wrap command to fetch a specific page of data.
+     * Uses (take collection [start count]) to slice directly.
+     */
+    private wrapCommandForPage(command: string, offset: number, pageSize: number): string {
+        // Rayfall: (take collection [start count]) takes count items from start index
+        return `((fn [] (let __pr_r ${command}) (let __pr_t (type __pr_r)) (let __pr_c (if (or (== __pr_t 'TABLE) (== __pr_t 'LIST)) (count __pr_r) 0)) (list __pr_c __pr_t (take __pr_r [${offset} ${pageSize}]))))`;
+    }
+
+    /**
+     * Navigate to a specific page for a paginated table result.
+     */
+    private async changeTablePage(historyId: string, page: number, pageSize: number): Promise<void> {
+        const currentVersion = this.connectionVersion;
+        const entry = this.history.find(h => h.id === historyId);
+        
+        if (!entry || !entry.input || entry.totalCount === undefined) return;
+        if (!this.ipcClient || !this.ipcClient.isConnected()) return;
+
+        const offset = page * pageSize;
+        
+        try {
+            const wrappedCommand = this.wrapCommandForPage(entry.input, offset, pageSize);
+            const result = await this.ipcClient.execute(wrappedCommand);
+            
+            if (this.connectionVersion !== currentVersion) return;
+            
+            if (isError(result)) return;
+            
+            // Parse wrapped result: [count, type, data]
+            if (Array.isArray(result) && result.length === 3) {
+                const [, , dataVal] = result;
+                
+                // Attach original count for display
+                if (typeof dataVal === 'object' && dataVal !== null && '_type' in dataVal) {
+                    if (dataVal._type === 'table') {
+                        (dataVal as any)._originalCount = entry.totalCount;
+                    }
+                } else if (Array.isArray(dataVal)) {
+                    (dataVal as any)._originalCount = entry.totalCount;
+                }
+                
+                entry.output = dataVal;
+                entry.currentPage = page;
+                entry.pageSize = pageSize;
+                this.updateWebview();
+            }
+        } catch {
+            // Ignore pagination errors
+        }
+    }
+
+    /**
+     * Change the page size and reset to first page.
+     */
+    private async changeTablePageSize(historyId: string, pageSize: number): Promise<void> {
+        const entry = this.history.find(h => h.id === historyId);
+        if (!entry) return;
+        
+        entry.pageSize = pageSize;
+        await this.changeTablePage(historyId, 0, pageSize);
     }
 
     private async executeCommand(input: string): Promise<void> {
@@ -273,6 +481,7 @@ export class RayforceReplPanel {
 
         if (!this.ipcClient || !this.ipcClient.isConnected()) {
             this.history.push({
+                id: this.generateHistoryId(),
                 input,
                 output: 'Not connected to any Rayforce instance',
                 isError: true,
@@ -282,35 +491,110 @@ export class RayforceReplPanel {
             return;
         }
 
+        // First try the preview wrapper for potential large results
+        let useRawFallback = false;
+        
         try {
-            const result = await this.ipcClient.execute(input);
+            const wrappedCommand = this.wrapCommandForPreview(input);
+            const result = await this.ipcClient.execute(wrappedCommand);
 
             // Abort if connection changed
             if (this.connectionVersion !== currentVersion) return;
 
-            this.history.push({
-                input,
-                output: result,
-                isError: isError(result),
-                isSystem: false
-            });
-        } catch (err) {
-            // Abort if connection changed
-            if (this.connectionVersion !== currentVersion) return;
+            // Check if the wrapper itself caused a parse error - fall back to raw
+            if (isError(result)) {
+                const errResult = result as RayforceError;
+                // Parse errors (code 2) likely mean wrapper syntax issue - try raw
+                if (errResult.code === 2) {
+                    useRawFallback = true;
+                } else {
+                    // Other errors are from the user's command, show them
+                    this.history.push({ id: this.generateHistoryId(), input, output: result, isError: true, isSystem: false });
+                    this.updateWebview();
+                    return;
+                }
+            }
 
-            this.history.push({
-                input,
-                output: err instanceof Error ? err.message : String(err),
-                isError: true,
-                isSystem: false
-            });
+            if (!useRawFallback) {
+                // Parse the wrapped result: [original_count, type, truncated_result]
+                let actualResult: RayforceValue = result;
+                let originalCount: number | null = null;
+
+                if (Array.isArray(result) && result.length === 3) {
+                    const [countVal, , dataVal] = result;
+                    
+                    if (typeof countVal === 'number') {
+                        originalCount = countVal;
+                    } else if (typeof countVal === 'bigint') {
+                        originalCount = Number(countVal);
+                    }
+                    
+                    actualResult = dataVal;
+                    
+                    // Attach metadata for pretty printing
+                    if (originalCount !== null && originalCount > RayforceReplPanel.MAX_PREVIEW_ROWS) {
+                        if (typeof actualResult === 'object' && actualResult !== null && '_type' in actualResult) {
+                            if (actualResult._type === 'table') {
+                                (actualResult as any)._originalCount = originalCount;
+                            }
+                        } else if (Array.isArray(actualResult)) {
+                            (actualResult as any)._originalCount = originalCount;
+                        }
+                    }
+                }
+
+                const isPaginated = originalCount !== null && originalCount > RayforceReplPanel.MAX_PREVIEW_ROWS;
+                this.history.push({
+                    id: this.generateHistoryId(),
+                    input,
+                    output: actualResult,
+                    isError: isError(actualResult),
+                    isSystem: false,
+                    totalCount: isPaginated && originalCount !== null ? originalCount : undefined,
+                    currentPage: isPaginated ? 0 : undefined,
+                    pageSize: isPaginated ? RayforceReplPanel.MAX_PREVIEW_ROWS : undefined
+                });
+                this.updateWebview();
+                return;
+            }
+        } catch {
+            useRawFallback = true;
         }
 
-        this.updateWebview();
+        // Fallback: execute raw command (may be slow for large results)
+        if (useRawFallback) {
+            if (this.connectionVersion !== currentVersion) return;
+            
+            try {
+                const result = await this.ipcClient.execute(input);
+                
+                if (this.connectionVersion !== currentVersion) return;
+
+                this.history.push({
+                    id: this.generateHistoryId(),
+                    input,
+                    output: result,
+                    isError: isError(result),
+                    isSystem: false
+                });
+            } catch (rawErr) {
+                if (this.connectionVersion !== currentVersion) return;
+
+                this.history.push({
+                    id: this.generateHistoryId(),
+                    input,
+                    output: rawErr instanceof Error ? rawErr.message : String(rawErr),
+                    isError: true,
+                    isSystem: false
+                });
+            }
+            
+            this.updateWebview();
+        }
     }
 
     private addSystemMessage(message: string, isError: boolean = false): void {
-        this.history.push({ input: '', output: message, isError, isSystem: true });
+        this.history.push({ id: this.generateHistoryId(), input: '', output: message, isError, isSystem: true });
         this.updateWebview();
     }
 
@@ -339,10 +623,21 @@ export class RayforceReplPanel {
                     </div>
                 `;
             } else if (item.input) {
+                // Build pagination info if available
+                let pagination: PaginationInfo | undefined;
+                if (item.totalCount !== undefined && item.currentPage !== undefined && item.pageSize !== undefined) {
+                    pagination = {
+                        historyId: item.id,
+                        currentPage: item.currentPage,
+                        pageSize: item.pageSize,
+                        totalCount: item.totalCount
+                    };
+                }
+                
                 // User command with output - render with pretty print
                 const outputHtml = typeof item.output === 'string'
                     ? `<span class="rf-error">${this.escapeHtml(item.output)}</span>`
-                    : formatValueHtml(item.output as RayforceValue);
+                    : formatValueHtml(item.output as RayforceValue, defaultConfig, pagination);
                 return `
                     <div class="history-item">
                         <div class="input-line"><span class="prompt-char">&gt;</span> <span class="input-text">${this.highlightSyntax(item.input)}</span></div>
@@ -1098,7 +1393,13 @@ export class RayforceReplPanel {
 
         function updateHighlight() {
             if (syntaxHighlight && input) {
-                syntaxHighlight.innerHTML = highlightSyntax(input.value);
+                if (input.value) {
+                    syntaxHighlight.innerHTML = highlightSyntax(input.value);
+                    syntaxHighlight.style.display = 'block';
+                } else {
+                    syntaxHighlight.innerHTML = '';
+                    syntaxHighlight.style.display = 'none';
+                }
             }
         }
 
@@ -1219,6 +1520,51 @@ export class RayforceReplPanel {
         function inspectVar(name) {
             vscode.postMessage({ command: 'inspectVar', name });
         }
+
+        // Pagination handlers
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            if (!target.classList || !target.classList.contains('rf-pagination-btn')) return;
+            
+            const paginationDiv = target.closest('.rf-pagination');
+            if (!paginationDiv) return;
+            
+            const historyId = paginationDiv.dataset.historyId;
+            const pageSizeSelect = paginationDiv.querySelector('.rf-pagination-select');
+            const pageSize = parseInt(pageSizeSelect?.value || '100', 10);
+            
+            // Parse current page from the pagination info text
+            const pageStrong = paginationDiv.querySelector('.rf-pagination-page strong');
+            const currentPage = parseInt(pageStrong?.textContent || '1', 10) - 1;
+            const totalPagesStrong = paginationDiv.querySelectorAll('.rf-pagination-page strong')[1];
+            const totalPages = parseInt(totalPagesStrong?.textContent || '1', 10);
+            
+            let newPage = currentPage;
+            
+            if (target.classList.contains('rf-pagination-first')) {
+                newPage = 0;
+            } else if (target.classList.contains('rf-pagination-prev')) {
+                newPage = Math.max(0, currentPage - 1);
+            } else if (target.classList.contains('rf-pagination-next')) {
+                newPage = Math.min(totalPages - 1, currentPage + 1);
+            } else if (target.classList.contains('rf-pagination-last')) {
+                newPage = totalPages - 1;
+            }
+            
+            if (newPage !== currentPage) {
+                vscode.postMessage({ command: 'changePage', historyId, page: newPage, pageSize });
+            }
+        });
+
+        document.addEventListener('change', (e) => {
+            const target = e.target;
+            if (!target.classList || !target.classList.contains('rf-pagination-select')) return;
+            
+            const historyId = target.dataset.historyId;
+            const pageSize = parseInt(target.value, 10);
+            
+            vscode.postMessage({ command: 'changePageSize', historyId, pageSize });
+        });
 
         if (input && !input.disabled) input.focus();
     </script>

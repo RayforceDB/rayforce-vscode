@@ -526,21 +526,39 @@ export class RayforceIpcClient {
 
     async connect(timeout: number = 5000): Promise<void> {
         return new Promise((resolve, reject) => {
+            let settled = false;
+            
+            const settle = (fn: () => void) => {
+                if (!settled) {
+                    settled = true;
+                    clearTimeout(timeoutHandle);
+                    fn();
+                }
+            };
+
             const timeoutHandle = setTimeout(() => {
-                this.disconnect();
-                reject(new Error(`Connection timeout after ${timeout}ms`));
+                settle(() => {
+                    this.disconnect();
+                    reject(new Error(`Connection timeout after ${timeout}ms`));
+                });
             }, timeout);
 
             this.socket = new net.Socket();
             
             this.socket.on('error', (err) => {
-                clearTimeout(timeoutHandle);
-                this.connected = false;
-                reject(err);
+                settle(() => {
+                    this.connected = false;
+                    reject(err);
+                });
             });
 
             this.socket.on('close', () => {
                 this.connected = false;
+                // If still connecting, reject the connect promise
+                settle(() => {
+                    reject(new Error('Connection closed'));
+                });
+                // Also handle pending execute operations
                 if (this.pendingReject) {
                     this.pendingReject(new Error('Connection closed'));
                     this.pendingResolve = null;
@@ -553,21 +571,26 @@ export class RayforceIpcClient {
                 handshake[0] = RAYFORCE_VERSION;
                 handshake[1] = 0;
                 
-                this.socket!.write(handshake, () => {
+                this.socket!.write(handshake, (writeErr) => {
+                    if (writeErr) {
+                        settle(() => reject(writeErr));
+                        return;
+                    }
+                    
                     this.socket!.once('data', (data: Buffer) => {
                         if (data.length >= 1 && data[0] === RAYFORCE_VERSION) {
-                            clearTimeout(timeoutHandle);
-                            this.connected = true;
-                            this.socket!.on('data', (d) => this.handleData(d));
-                            
-                            if (data.length > 1) {
-                                this.responseBuffer = Buffer.concat([this.responseBuffer, data.subarray(1)]);
-                                this.tryProcessResponse();
-                            }
-                            resolve();
+                            settle(() => {
+                                this.connected = true;
+                                this.socket!.on('data', (d) => this.handleData(d));
+                                
+                                if (data.length > 1) {
+                                    this.responseBuffer = Buffer.concat([this.responseBuffer, data.subarray(1)]);
+                                    this.tryProcessResponse();
+                                }
+                                resolve();
+                            });
                         } else {
-                            clearTimeout(timeoutHandle);
-                            reject(new Error('Invalid handshake response'));
+                            settle(() => reject(new Error('Invalid handshake response')));
                         }
                     });
                 });
@@ -653,7 +676,9 @@ export class RayforceIpcClient {
 
     private handleData(data: Buffer): void {
         // Ignore data if disconnected
-        if (!this.connected || !this.socket) return;
+        if (!this.connected || !this.socket) {
+            return;
+        }
         
         this.responseBuffer = Buffer.concat([this.responseBuffer, data]);
         this.tryProcessResponse();

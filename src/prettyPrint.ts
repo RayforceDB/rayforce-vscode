@@ -18,6 +18,13 @@ export interface PrettyPrintConfig {
     useUnicode: boolean;
 }
 
+export interface PaginationInfo {
+    historyId: string;
+    currentPage: number;
+    pageSize: number;
+    totalCount: number;
+}
+
 const DEFAULT_CONFIG: PrettyPrintConfig = {
     maxTableRows: 20,
     maxTableCols: 10,
@@ -160,14 +167,18 @@ export function getPrettyPrintStyles(): string {
     padding: 4px;
 }
 .rf-table-footer {
+    display: flex;
+    align-items: center;
     background: var(--vscode-sideBar-background, #161b22);
-    padding: 6px 12px;
-    font-size: 11px;
+    padding: 4px 8px;
+    font-size: 10px;
     color: var(--vscode-descriptionForeground, #8b949e);
     border-top: 1px solid var(--vscode-panel-border, #30363d);
+    gap: 8px;
+    flex-wrap: wrap;
 }
 .rf-table-footer-stat {
-    margin-right: 12px;
+    white-space: nowrap;
 }
 .rf-table-footer-stat strong {
     color: var(--vscode-foreground);
@@ -178,6 +189,76 @@ export function getPrettyPrintStyles(): string {
     display: inline;
     color: var(--vscode-descriptionForeground);
 }
+
+/* Pagination styles */
+.rf-pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+.rf-pagination-info {
+    color: var(--vscode-descriptionForeground);
+    font-size: 10px;
+}
+.rf-pagination-info strong {
+    color: var(--vscode-foreground);
+}
+.rf-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+.rf-pagination-btn {
+    background: var(--vscode-button-secondaryBackground, #3c3c3c);
+    color: var(--vscode-button-secondaryForeground, #ccc);
+    border: none;
+    padding: 2px 5px;
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    transition: all 0.15s;
+    min-width: 22px;
+    line-height: 1.2;
+}
+.rf-pagination-btn:hover:not(:disabled) {
+    background: var(--vscode-button-secondaryHoverBackground, #505050);
+}
+.rf-pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.rf-pagination-page {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground);
+    padding: 0 6px;
+}
+.rf-pagination-page strong {
+    color: var(--vscode-foreground);
+}
+.rf-pagination-size {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+}
+.rf-pagination-size label {
+    font-size: 10px;
+    color: var(--vscode-descriptionForeground);
+}
+.rf-pagination-select {
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, transparent);
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-size: 10px;
+    cursor: pointer;
+}
+.rf-pagination-select:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+}
 `;
 }
 
@@ -185,11 +266,11 @@ export function getPrettyPrintStyles(): string {
 // HTML Formatters
 // ============================================================================
 
-export function formatValueHtml(value: RayforceValue, config: PrettyPrintConfig = DEFAULT_CONFIG): string {
-    return `<span class="rf-value">${formatValueInner(value, config, 0)}</span>`;
+export function formatValueHtml(value: RayforceValue, config: PrettyPrintConfig = DEFAULT_CONFIG, pagination?: PaginationInfo): string {
+    return `<span class="rf-value">${formatValueInner(value, config, 0, pagination)}</span>`;
 }
 
-function formatValueInner(value: RayforceValue, config: PrettyPrintConfig, depth: number): string {
+function formatValueInner(value: RayforceValue, config: PrettyPrintConfig, depth: number, pagination?: PaginationInfo): string {
     if (value === null) {
         return `<span class="rf-null">::</span>`;
     }
@@ -224,7 +305,7 @@ function formatValueInner(value: RayforceValue, config: PrettyPrintConfig, depth
     }
 
     if (Array.isArray(value)) {
-        return formatArray(value, config, depth);
+        return formatArray(value, config, depth, pagination);
     }
 
     if (typeof value === 'object' && '_type' in value) {
@@ -232,7 +313,7 @@ function formatValueInner(value: RayforceValue, config: PrettyPrintConfig, depth
             return formatError(value as RayforceError);
         }
         if (value._type === 'table') {
-            return formatTableHtml(value as RayforceTable, config);
+            return formatTableHtml(value as RayforceTable, config, pagination);
         }
         if (value._type === 'dict') {
             return formatDictHtml(value as RayforceDict, config, depth);
@@ -332,7 +413,7 @@ function formatTimestamp(d: Date): string {
     return `<span class="rf-timestamp">${formatted}</span>`;
 }
 
-function formatArray(arr: RayforceValue[], config: PrettyPrintConfig, depth: number): string {
+function formatArray(arr: RayforceValue[], config: PrettyPrintConfig, depth: number, pagination?: PaginationInfo): string {
     if (arr.length === 0) {
         return `<span class="rf-list"><span class="rf-list-bracket">()</span></span>`;
     }
@@ -341,15 +422,31 @@ function formatArray(arr: RayforceValue[], config: PrettyPrintConfig, depth: num
     const openBracket = isVector ? '[' : '(';
     const closeBracket = isVector ? ']' : ')';
     
+    // Check if server-side truncation occurred
+    const originalCount = (arr as any)._originalCount as number | undefined;
+    const totalItems = pagination?.totalCount || originalCount || arr.length;
+    const isPaginated = pagination && pagination.totalCount > pagination.pageSize;
+    
     const maxItems = config.maxListItems;
-    const showEllipsis = arr.length > maxItems;
-    const itemsToShow = showEllipsis ? arr.slice(0, maxItems) : arr;
+    const showEllipsis = !isPaginated && (arr.length > maxItems || (originalCount !== undefined && originalCount > arr.length));
+    const itemsToShow = arr.length > maxItems ? arr.slice(0, maxItems) : arr;
 
     const items = itemsToShow.map(v => 
         `<span class="rf-list-item">${formatValueInner(v, config, depth + 1)}</span>`
     ).join(' ');
 
-    return `<span class="rf-list"><span class="rf-list-bracket">${openBracket}</span><span class="rf-list-items">${items}${showEllipsis ? ' <span class="rf-list-ellipsis">..</span>' : ''}</span><span class="rf-list-bracket">${closeBracket}</span></span>`;
+    // Show count info for large/truncated arrays
+    let ellipsisText = '';
+    if (showEllipsis) {
+        ellipsisText = ` <span class="rf-list-ellipsis">.. (${totalItems.toLocaleString()} total)</span>`;
+    }
+
+    let paginationHtml = '';
+    if (isPaginated) {
+        paginationHtml = formatPaginationControls(pagination, 'list');
+    }
+
+    return `<span class="rf-list"><span class="rf-list-bracket">${openBracket}</span><span class="rf-list-items">${items}${ellipsisText}</span><span class="rf-list-bracket">${closeBracket}</span></span>${paginationHtml}`;
 }
 
 function formatError(error: RayforceError): string {
@@ -392,10 +489,50 @@ function formatDictHtml(dict: RayforceDict, config: PrettyPrintConfig, depth: nu
 }
 
 // ============================================================================
+// Pagination Controls
+// ============================================================================
+
+function formatPaginationControls(pagination: PaginationInfo, type: 'table' | 'list'): string {
+    const { historyId, currentPage, pageSize, totalCount } = pagination;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const startRow = currentPage * pageSize + 1;
+    const endRow = Math.min((currentPage + 1) * pageSize, totalCount);
+    
+    const prevDisabled = currentPage === 0;
+    const nextDisabled = currentPage >= totalPages - 1;
+    
+    return `
+        <div class="rf-pagination" data-history-id="${historyId}" data-type="${type}">
+            <span class="rf-pagination-info">
+                <strong>${startRow.toLocaleString()}</strong>–<strong>${endRow.toLocaleString()}</strong> of <strong>${totalCount.toLocaleString()}</strong>
+            </span>
+            <div class="rf-pagination-controls">
+                <button class="rf-pagination-btn rf-pagination-first" ${currentPage === 0 ? 'disabled' : ''} title="First page">⟨⟨</button>
+                <button class="rf-pagination-btn rf-pagination-prev" ${prevDisabled ? 'disabled' : ''} title="Previous page">⟨</button>
+                <span class="rf-pagination-page">Page <strong>${currentPage + 1}</strong> of <strong>${totalPages}</strong></span>
+                <button class="rf-pagination-btn rf-pagination-next" ${nextDisabled ? 'disabled' : ''} title="Next page">⟩</button>
+                <button class="rf-pagination-btn rf-pagination-last" ${currentPage >= totalPages - 1 ? 'disabled' : ''} title="Last page">⟩⟩</button>
+            </div>
+            <div class="rf-pagination-size">
+                <label>Show:</label>
+                <select class="rf-pagination-select" data-history-id="${historyId}">
+                    <option value="10" ${pageSize === 10 ? 'selected' : ''}>10</option>
+                    <option value="25" ${pageSize === 25 ? 'selected' : ''}>25</option>
+                    <option value="50" ${pageSize === 50 ? 'selected' : ''}>50</option>
+                    <option value="100" ${pageSize === 100 ? 'selected' : ''}>100</option>
+                    <option value="250" ${pageSize === 250 ? 'selected' : ''}>250</option>
+                    <option value="500" ${pageSize === 500 ? 'selected' : ''}>500</option>
+                </select>
+            </div>
+        </div>
+    `;
+}
+
+// ============================================================================
 // Table Formatter (The Beautiful One!)
 // ============================================================================
 
-export function formatTableHtml(table: RayforceTable, config: PrettyPrintConfig = DEFAULT_CONFIG): string {
+export function formatTableHtml(table: RayforceTable, config: PrettyPrintConfig = DEFAULT_CONFIG, pagination?: PaginationInfo): string {
     const columns = table.columns;
     const values = table.values;
 
@@ -405,13 +542,18 @@ export function formatTableHtml(table: RayforceTable, config: PrettyPrintConfig 
 
     // Calculate dimensions
     const totalCols = columns.length;
-    const totalRows = Array.isArray(values) && values.length > 0 && Array.isArray(values[0]) 
+    // Use the actual fetched row count
+    const fetchedRows = Array.isArray(values) && values.length > 0 && Array.isArray(values[0]) 
         ? (values[0] as RayforceValue[]).length 
         : 0;
+    
+    // Check if server-side truncation occurred (set by executeCommand)
+    const originalCount = (table as any)._originalCount as number | undefined;
+    const totalRows = pagination?.totalCount || originalCount || fetchedRows;
+    const isPaginated = pagination && pagination.totalCount > pagination.pageSize;
 
     const showCols = Math.min(totalCols, config.maxTableCols);
-    const showRows = Math.min(totalRows, config.maxTableRows);
-    const truncatedRows = totalRows > showRows;
+    const showRows = fetchedRows; // Show all fetched rows when paginated
     const truncatedCols = totalCols > showCols;
 
     // Use actual column types from table metadata, or detect from values
@@ -453,15 +595,10 @@ export function formatTableHtml(table: RayforceTable, config: PrettyPrintConfig 
     }
     html += `</tr></thead>`;
 
-    // Data rows
+    // Data rows - show all when paginated
     html += `<tbody>`;
     
-    // Determine which rows to show (first half and last half if truncated)
-    const firstHalf = truncatedRows ? Math.floor(showRows / 2) : showRows;
-    const lastHalf = truncatedRows ? showRows - firstHalf : 0;
-
-    // First half of rows
-    for (let r = 0; r < firstHalf; r++) {
+    for (let r = 0; r < showRows; r++) {
         html += `<tr>`;
         for (let c = 0; c < showCols; c++) {
             const colData = values[c];
@@ -474,42 +611,19 @@ export function formatTableHtml(table: RayforceTable, config: PrettyPrintConfig 
         html += `</tr>`;
     }
 
-    // Ellipsis row if truncated (horizontal separator)
-    if (truncatedRows) {
-        html += `<tr class="rf-table-ellipsis-row">`;
-        for (let c = 0; c < showCols; c++) {
-            html += `<td>···</td>`;
-        }
-        if (truncatedCols) {
-            html += `<td></td>`;
-        }
-        html += `</tr>`;
-
-        // Last half of rows
-        for (let r = 0; r < lastHalf; r++) {
-            const actualRow = totalRows - lastHalf + r;
-            html += `<tr>`;
-            for (let c = 0; c < showCols; c++) {
-                const colData = values[c];
-                const cellValue = Array.isArray(colData) && actualRow < colData.length ? colData[actualRow] : null;
-                html += `<td>${formatCellValue(cellValue, config)}</td>`;
-            }
-            if (truncatedCols) {
-                html += `<td class="rf-list-ellipsis">…</td>`;
-            }
-            html += `</tr>`;
-        }
-    }
-
     html += `</tbody></table>`;
 
-    // Footer with stats
+    // Footer with stats and pagination controls
     html += `<div class="rf-table-footer">`;
-    html += `<span class="rf-table-footer-stat"><strong>${totalRows}</strong> rows`;
-    if (truncatedRows) {
-        html += ` (${showRows} shown)`;
+    
+    if (isPaginated) {
+        // Pagination controls
+        html += formatPaginationControls(pagination, 'table');
+    } else {
+        // Simple stats
+        html += `<span class="rf-table-footer-stat"><strong>${totalRows.toLocaleString()}</strong> rows</span>`;
     }
-    html += `</span>`;
+    
     html += `<span class="rf-table-footer-stat"><strong>${totalCols}</strong> columns`;
     if (truncatedCols) {
         html += ` (${showCols} shown)`;

@@ -43,8 +43,8 @@ export async function activate(context: vscode.ExtensionContext) {
     const connectCommand = vscode.commands.registerCommand(
         'rayforce.connectToInstance',
         async (item: RayforceInstanceItem) => {
-            // Guard against invalid arguments
-            if (!item || !(item instanceof RayforceInstanceItem) || !item.process) {
+            // Guard against invalid arguments (use property check since instanceof fails after serialization)
+            if (!item || !item.process || typeof item.process.port !== 'number') {
                 return;
             }
             const result = await instancesProvider.connectToInstance(item);
@@ -60,8 +60,8 @@ export async function activate(context: vscode.ExtensionContext) {
     const connectRemoteCommand = vscode.commands.registerCommand(
         'rayforce.connectToRemote',
         async (item: RemoteInstanceItem) => {
-            // Guard against invalid arguments
-            if (!item || !(item instanceof RemoteInstanceItem) || !item.connection) {
+            // Guard against invalid arguments (use property check since instanceof fails after serialization)
+            if (!item || !item.connection || typeof item.connection.port !== 'number') {
                 return;
             }
             const result = await instancesProvider.connectToRemote(item);
@@ -112,10 +112,14 @@ export async function activate(context: vscode.ExtensionContext) {
         async (item?: InstanceItem) => {
             const panel = RayforceReplPanel.createOrShow(context.extensionUri);
             
-            if (item && item instanceof RayforceInstanceItem && item.process) {
-                try { await panel.connect('localhost', item.process.port); } catch {}
-            } else if (item && item instanceof RemoteInstanceItem && item.connection) {
-                try { await panel.connect(item.connection.host, item.connection.port); } catch {}
+            // Use property checks instead of instanceof (fails after serialization)
+            const asLocal = item as RayforceInstanceItem | undefined;
+            const asRemote = item as RemoteInstanceItem | undefined;
+            
+            if (asLocal?.process && typeof asLocal.process.port === 'number') {
+                try { await panel.connect('localhost', asLocal.process.port); } catch {}
+            } else if (asRemote?.connection && typeof asRemote.connection.port === 'number') {
+                try { await panel.connect(asRemote.connection.host, asRemote.connection.port); } catch {}
             } else if (!item) {
                 const host = instancesProvider.getConnectedHost();
                 const port = instancesProvider.getConnectedPort();
