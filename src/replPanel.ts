@@ -1,10 +1,18 @@
 import * as vscode from 'vscode';
-import { RayforceIpcClient, formatValue, isError, RayforceValue, RayforceDict } from './rayforceIpc';
+import { RayforceIpcClient, isError, RayforceValue, RayforceDict } from './rayforceIpc';
+import { formatValueHtml, formatValueText, getPrettyPrintStyles, detectType, defaultConfig } from './prettyPrint';
 
 interface EnvEntry {
     name: string;
     type: string;
     value: string;
+}
+
+interface HistoryEntry {
+    input: string;
+    output: RayforceValue | string;  // Store raw value or string for system messages
+    isError: boolean;
+    isSystem: boolean;
 }
 
 export class RayforceReplPanel {
@@ -17,7 +25,7 @@ export class RayforceReplPanel {
     
     private ipcClient: RayforceIpcClient | null = null;
     private port: number | null = null;
-    private history: { input: string; output: string; isError: boolean }[] = [];
+    private history: HistoryEntry[] = [];
     private envData: EnvEntry[] = [];
     private showEnv: boolean = true;
 
@@ -198,23 +206,11 @@ export class RayforceReplPanel {
     }
 
     private inferType(val: RayforceValue): string {
-        if (val === null) return 'Null';
-        if (typeof val === 'boolean') return 'B8';
-        if (typeof val === 'number') return Number.isInteger(val) ? 'I32' : 'F64';
-        if (typeof val === 'bigint') return 'I64';
-        if (typeof val === 'string') return 'C8';
-        if (typeof val === 'symbol') return 'Symbol';
-        if (Array.isArray(val)) return 'List';
-        if (typeof val === 'object' && '_type' in val) {
-            if (val._type === 'table') return 'Table';
-            if (val._type === 'dict') return 'Dict';
-            if (val._type === 'error') return 'Error';
-        }
-        return 'Unknown';
+        return detectType(val);
     }
 
     private formatShortValue(val: RayforceValue, maxLen: number = 30): string {
-        const full = formatValue(val);
+        const full = formatValueText(val, { ...defaultConfig, maxStringLength: maxLen });
         if (full.length <= maxLen) return full;
         return full.substring(0, maxLen - 3) + '...';
     }
@@ -226,12 +222,12 @@ export class RayforceReplPanel {
 
         try {
             const result = await this.ipcClient.execute(name);
-            const formatted = formatValue(result);
             
             this.history.push({
                 input: name,
-                output: formatted,
-                isError: isError(result)
+                output: result,
+                isError: isError(result),
+                isSystem: false
             });
             
             this.updateWebview();
@@ -247,7 +243,8 @@ export class RayforceReplPanel {
             this.history.push({
                 input,
                 output: 'Not connected to any Rayforce instance',
-                isError: true
+                isError: true,
+                isSystem: false
             });
             this.updateWebview();
             return;
@@ -257,14 +254,16 @@ export class RayforceReplPanel {
             const result = await this.ipcClient.execute(input);
             this.history.push({
                 input,
-                output: formatValue(result),
-                isError: isError(result)
+                output: result,
+                isError: isError(result),
+                isSystem: false
             });
         } catch (err) {
             this.history.push({
                 input,
                 output: err instanceof Error ? err.message : String(err),
-                isError: true
+                isError: true,
+                isSystem: false
             });
         }
 
@@ -272,7 +271,7 @@ export class RayforceReplPanel {
     }
 
     private addSystemMessage(message: string, isError: boolean = false): void {
-        this.history.push({ input: '', output: `[System] ${message}`, isError });
+        this.history.push({ input: '', output: message, isError, isSystem: true });
         this.updateWebview();
     }
 
@@ -293,19 +292,26 @@ export class RayforceReplPanel {
         );
         
         const historyHtml = this.history.map(item => {
-            if (item.input) {
+            if (item.isSystem) {
+                // System message - render as plain text
+                return `
+                    <div class="history-item system">
+                        <div class="output-line ${item.isError ? 'error' : 'info'}">[System] ${this.escapeHtml(String(item.output))}</div>
+                    </div>
+                `;
+            } else if (item.input) {
+                // User command with output - render with pretty print
+                const outputHtml = typeof item.output === 'string' 
+                    ? `<span class="rf-error">${this.escapeHtml(item.output)}</span>`
+                    : formatValueHtml(item.output as RayforceValue);
                 return `
                     <div class="history-item">
                         <div class="input-line"><span class="prompt-char">&gt;</span> <span class="input-text">${this.escapeHtml(item.input)}</span></div>
-                        <div class="output-line ${item.isError ? 'error' : ''}">${this.escapeHtml(item.output)}</div>
+                        <div class="output-line ${item.isError ? 'error-output' : ''}">${outputHtml}</div>
                     </div>
                 `;
             } else {
-                return `
-                    <div class="history-item system">
-                        <div class="output-line ${item.isError ? 'error' : 'info'}">${this.escapeHtml(item.output)}</div>
-                    </div>
-                `;
+                return '';
             }
         }).join('');
 
@@ -316,6 +322,8 @@ export class RayforceReplPanel {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rayforce REPL</title>
     <style>
+        ${getPrettyPrintStyles()}
+        
         :root {
             /* Use VSCode native theme colors */
             --bg-primary: var(--vscode-editor-background);
@@ -558,10 +566,19 @@ export class RayforceReplPanel {
             color: var(--error);
         }
 
+        .output-line.error-output .rf-error {
+            color: var(--error);
+        }
+
         .output-line.info {
             color: var(--info);
             font-style: italic;
             padding-left: 0;
+        }
+
+        /* Override table container margin for REPL */
+        .output-line .rf-table-container {
+            margin: 8px 0 8px 0;
         }
 
         .input-area {

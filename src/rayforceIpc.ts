@@ -75,6 +75,7 @@ export type RayforceValue =
 export interface RayforceTable {
     _type: 'table';
     columns: string[];
+    columnTypes: string[];  // Rayforce type names for each column
     values: RayforceValue[][];
 }
 
@@ -350,7 +351,9 @@ class Deserializer {
     private deserializeTable(): RayforceTable {
         this.readUInt8(); // skip attrs
         const keys = this.deserialize();
-        const values = this.deserialize();
+        
+        // Deserialize the column list while capturing types
+        const { values: columnValues, types: columnTypes } = this.deserializeTableColumns();
 
         const columns = Array.isArray(keys) 
             ? keys.map(k => typeof k === 'symbol' ? Symbol.keyFor(k) || String(k) : String(k))
@@ -359,8 +362,124 @@ class Deserializer {
         return {
             _type: 'table',
             columns,
-            values: Array.isArray(values) ? values as RayforceValue[][] : []
+            columnTypes,
+            values: columnValues
         };
+    }
+
+    private deserializeTableColumns(): { values: RayforceValue[][], types: string[] } {
+        if (this.remaining < 1) {
+            return { values: [], types: [] };
+        }
+
+        const listType = this.readInt8();
+        if (listType !== TYPE_LIST) {
+            // Not a list, fall back to regular deserialization
+            // Put the byte back by adjusting offset
+            this.offset -= 1;
+            const val = this.deserialize();
+            return { 
+                values: Array.isArray(val) ? val as RayforceValue[][] : [], 
+                types: [] 
+            };
+        }
+
+        this.readUInt8(); // skip attrs
+        const len = Number(this.readBigInt64LE());
+
+        const values: RayforceValue[][] = [];
+        const types: string[] = [];
+
+        for (let i = 0; i < len; i++) {
+            const { value, typeName } = this.deserializeWithType();
+            values.push(Array.isArray(value) ? value as RayforceValue[] : [value]);
+            types.push(typeName);
+        }
+
+        return { values, types };
+    }
+
+    private deserializeWithType(): { value: RayforceValue, typeName: string } {
+        if (this.remaining < 1) {
+            return { value: null, typeName: 'Null' };
+        }
+
+        const type = this.readInt8();
+        const typeName = this.getTypeName(type);
+
+        switch (type) {
+            case TYPE_NULL:
+                return { value: null, typeName };
+            case -TYPE_B8:
+                return { value: this.readInt8() !== 0, typeName };
+            case -TYPE_U8:
+                return { value: this.readUInt8(), typeName };
+            case -TYPE_I16:
+                return { value: this.readInt16LE(), typeName };
+            case -TYPE_I32:
+                return { value: this.readInt32LE(), typeName };
+            case -TYPE_DATE:
+                return { value: this.readInt32LE(), typeName };
+            case -TYPE_TIME:
+                return { value: this.readInt32LE(), typeName };
+            case -TYPE_I64:
+                return { value: this.readBigInt64LE(), typeName };
+            case -TYPE_TIMESTAMP:
+                return { value: this.readBigInt64LE(), typeName };
+            case -TYPE_F64:
+                return { value: this.readDoubleLE(), typeName };
+            case -TYPE_SYMBOL:
+                return { value: Symbol.for(this.readNullTerminatedString()), typeName };
+            case -TYPE_C8:
+                return { value: String.fromCharCode(this.readInt8()), typeName };
+            case -TYPE_GUID:
+                return { value: this.readBuffer(16).toString('hex'), typeName };
+            case TYPE_B8:
+            case TYPE_U8:
+            case TYPE_C8:
+            case TYPE_I32:
+            case TYPE_DATE:
+            case TYPE_TIME:
+            case TYPE_I64:
+            case TYPE_TIMESTAMP:
+            case TYPE_F64:
+            case TYPE_SYMBOL:
+            case TYPE_GUID:
+            case TYPE_LIST:
+                return { value: this.deserializeVector(type), typeName };
+            case TYPE_TABLE:
+                return { value: this.deserializeTable(), typeName };
+            case TYPE_DICT:
+                return { value: this.deserializeDict(), typeName };
+            case TYPE_ERR:
+                return { value: this.deserializeError(), typeName };
+            default:
+                throw new Error(`Unsupported type: ${type}`);
+        }
+    }
+
+    private getTypeName(type: number): string {
+        const typeNames: { [key: number]: string } = {
+            [TYPE_NULL]: 'Null',
+            [-TYPE_B8]: 'B8', [TYPE_B8]: 'B8',
+            [-TYPE_U8]: 'U8', [TYPE_U8]: 'U8',
+            [-TYPE_I16]: 'I16',
+            [-TYPE_I32]: 'I32', [TYPE_I32]: 'I32',
+            [-TYPE_I64]: 'I64', [TYPE_I64]: 'I64',
+            [-TYPE_F64]: 'F64', [TYPE_F64]: 'F64',
+            [-TYPE_C8]: 'C8', [TYPE_C8]: 'C8',
+            [-TYPE_SYMBOL]: 'Symbol', [TYPE_SYMBOL]: 'Symbol',
+            [-TYPE_DATE]: 'Date', [TYPE_DATE]: 'Date',
+            [-TYPE_TIME]: 'Time', [TYPE_TIME]: 'Time',
+            [-TYPE_TIMESTAMP]: 'Timestamp', [TYPE_TIMESTAMP]: 'Timestamp',
+            [-TYPE_GUID]: 'GUID', [TYPE_GUID]: 'GUID',
+            [TYPE_LIST]: 'List',
+            [TYPE_TABLE]: 'Table',
+            [TYPE_DICT]: 'Dict',
+            [TYPE_ERR]: 'Error',
+            [TYPE_LAMBDA]: 'Lambda'
+        };
+        return typeNames[type] || 'Unknown';
     }
 
     private deserializeDict(): RayforceDict {
