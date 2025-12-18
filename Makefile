@@ -1,20 +1,18 @@
-.PHONY: help install package install-code install-cursor test clean ensure-vsce-installed version
+.PHONY: package install-code install-cursor clean
 
-# Variables
 VERSION := $(shell node -p "require('./package.json').version")
 VSIX_FILE := rayforce-vscode-$(VERSION).vsix
 
-ensure-vsce-installed: ## Ensure vsce is installed globally
-	@which vsce > /dev/null || (echo "Installing vsce..." && npm install -g @vscode/vsce)
-
-package: ensure-vsce-installed
+package:
+	@npm run compile
 	@vsce package
 
-install-code: clean package
+install-code: package
 	@code --install-extension $(VSIX_FILE)
 
-install-cursor: clean package
+install-cursor: package
 	@cursor --install-extension $(VSIX_FILE)
 
 clean:
 	@rm -f *.vsix
+	@rm -rf out/

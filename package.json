@@ -1,15 +1,31 @@
 {
   "name": "rayforce-vscode",
-  "displayName": "RayforceDB Environment Manager",
-  "description": "Manager for local and remote RayforceDB runtimes.",
-  "version": "0.3.0",
-  "icon": "assets/logo.png",
+  "displayName": "Rayforce",
+  "description": "Runtime Manager for RayforceDB",
+  "version": "0.1.0",
   "publisher": "RayforceDB",
+  "icon": "assets/logo.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RayforceDB/rayforce-vscode"
+  },
+  "license": "MIT",
   "engines": {
     "vscode": "^1.74.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Debuggers"
+  ],
+  "keywords": [
+    "rayforce",
+    "rayforcedb",
+    "database",
+    "timeseries",
+    "columnar",
+    "rayfall",
+    "repl",
+    "lisp"
   ],
   "main": "./out/extension.js",
   "activationEvents": [
@@ -20,15 +36,8 @@
     "languages": [
       {
         "id": "rayforce",
-        "aliases": [
-          "Rayforce",
-          "rfl",
-          "rf"
-        ],
-        "extensions": [
-          ".rfl",
-          ".rf"
-        ],
+        "aliases": ["Rayforce", "rayforce"],
+        "extensions": [".rfl", ".rf"],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -52,28 +61,25 @@
       "rayforce-explorer": [
         {
           "id": "rayforceInstances",
-          "name": "Running Instances",
-          "icon": "assets/logo.png",
-          "contextualTitle": "Rayforce Instances"
+          "name": "Instances"
         },
         {
           "type": "webview",
           "id": "rayforceProcessInfo",
-          "name": "Connected Process",
-          "contextualTitle": "Connected Process Info"
+          "name": "Process Info"
         }
       ]
     },
     "commands": [
       {
         "command": "rayforce.refreshInstances",
-        "title": "Refresh Instances",
+        "title": "Refresh",
         "category": "Rayforce",
         "icon": "$(refresh)"
       },
       {
         "command": "rayforce.connectToInstance",
-        "title": "Connect to Instance",
+        "title": "Connect",
         "category": "Rayforce",
         "icon": "$(plug)"
       },
@@ -85,27 +91,21 @@
       },
       {
         "command": "rayforce.addRemote",
-        "title": "Add Remote Connection",
+        "title": "Add Remote",
         "category": "Rayforce",
         "icon": "$(add)"
       },
       {
         "command": "rayforce.removeRemote",
-        "title": "Remove Remote Connection",
+        "title": "Remove Remote",
         "category": "Rayforce",
         "icon": "$(trash)"
       },
       {
         "command": "rayforce.disconnectFromInstance",
-        "title": "Disconnect from Instance",
+        "title": "Disconnect",
         "category": "Rayforce",
         "icon": "$(debug-disconnect)"
-      },
-      {
-        "command": "rayforce.executeStatement",
-        "title": "Execute Statement in Connected Instance",
-        "category": "Rayforce",
-        "icon": "$(play)"
       },
       {
         "command": "rayforce.openRepl",
@@ -183,18 +183,6 @@
           "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
           "group": "inline"
         }
-      ],
-      "editor/title": [
-        {
-          "command": "rayforce.executeStatement",
-          "when": "editorLangId == rayforce",
-          "group": "navigation"
-        },
-        {
-          "command": "rayforce.refreshInstances",
-          "when": "editorLangId == rayforce",
-          "group": "navigation"
-        }
       ]
     }
   },
@@ -208,10 +196,5 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.74.0",
     "typescript": "^5.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/RayforceDB/rayforce-vscode"
-  },
-  "license": "MIT"
+  }
 }

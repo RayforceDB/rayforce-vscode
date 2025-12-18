@@ -24,9 +24,7 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
         };
 
         webviewView.webview.onDidReceiveMessage(async message => {
-            console.log('[ProcessInfo] Received message:', message);
             if (message.command === 'terminate') {
-                console.log('[ProcessInfo] Terminate requested, callback:', !!this.onTerminate);
                 if (this.onTerminate) {
                     await this.onTerminate();
                 }
@@ -57,8 +55,11 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
 
     private getHtmlContent(): string {
         const process = this.process;
-        const logoUri = this.view?.webview.asWebviewUri(
-            vscode.Uri.joinPath(this.extensionUri, 'assets', 'logo.png')
+        const logoWhiteUri = this.view?.webview.asWebviewUri(
+            vscode.Uri.joinPath(this.extensionUri, 'assets', 'logo_white.svg')
+        );
+        const logoBlackUri = this.view?.webview.asWebviewUri(
+            vscode.Uri.joinPath(this.extensionUri, 'assets', 'logo_black.svg')
         );
 
         if (this.isRemote || !process) {
@@ -151,6 +152,11 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
             width: 24px;
             height: 24px;
         }
+
+        .logo-light { display: none; }
+        .logo-dark { display: block; }
+        body.vscode-light .logo-light { display: block; }
+        body.vscode-light .logo-dark { display: none; }
 
         .header-info {
             flex: 1;
@@ -273,7 +279,8 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
     <div class="header">
-        <img src="${logoUri}" class="logo" alt="Rayforce" />
+        <img src="${logoWhiteUri}" class="logo logo-dark" alt="Rayforce" />
+        <img src="${logoBlackUri}" class="logo logo-light" alt="Rayforce" />
         <div class="header-info">
             <div class="port-label">localhost:${process.port}</div>
             <div class="pid-label">PID ${process.pid}</div>
@@ -283,7 +290,6 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
 
     <div class="metrics">
         <div class="metric">
-            <div class="metric-icon">⚡</div>
             <div class="metric-value" style="color: ${cpuColor}">${cpuPercent}%</div>
             <div class="metric-label">CPU</div>
             <div class="progress-bar">
@@ -291,7 +297,6 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
             </div>
         </div>
         <div class="metric">
-            <div class="metric-icon">◐</div>
             <div class="metric-value" style="color: ${memColor}">${memPercent}%</div>
             <div class="metric-label">Memory</div>
             <div class="progress-bar">
@@ -301,7 +306,6 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
     </div>
 
     <div class="command-section">
-        <div class="command-label">Command</div>
         <div class="command-text">${this.escapeHtml(process.command + ' ' + process.args)}</div>
     </div>
 

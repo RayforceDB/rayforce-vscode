@@ -1,214 +1,183 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "Rayforce",
+  "scopeName": "source.rayforce",
   "patterns": [
-    {
-      "include": "#comments"
-    },
-    {
-      "include": "#strings"
-    },
-    {
-      "include": "#character-literals"
-    },
-    {
-      "include": "#quoted-symbols"
-    },
-    {
-      "include": "#keywords"
-    },
-    {
-      "include": "#functions"
-    },
-    {
-      "include": "#operators"
-    },
-    {
-      "include": "#brackets"
-    },
-    {
-      "include": "#keyword-identifiers"
-    },
-    {
-      "include": "#numbers"
-    },
-    {
-      "include": "#booleans"
-    },
-    {
-      "include": "#type-names"
-    },
-    {
-      "include": "#temporal-types"
-    }
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#symbol" },
+    { "include": "#keyword" },
+    { "include": "#special-form" },
+    { "include": "#core-function" },
+    { "include": "#function-call" },
+    { "include": "#constant" },
+    { "include": "#number" },
+    { "include": "#operator" },
+    { "include": "#punctuation" }
   ],
   "repository": {
-    "comments": {
+    "comment": {
       "patterns": [
         {
-          "name": "comment.line.rayforce",
-          "begin": ";;",
-          "end": "$",
-          "captures": {
-            "0": {
-              "name": "punctuation.definition.comment.rayforce"
-            }
-          }
+          "name": "comment.line.semicolon.rayforce",
+          "match": ";;.*$"
         }
       ]
     },
-    "strings": {
+    "string": {
+      "name": "string.quoted.double.rayforce",
+      "begin": "\"",
+      "end": "\"",
       "patterns": [
         {
-          "name": "string.quoted.double.rayforce",
-          "begin": "\"",
-          "end": "\"",
-          "beginCaptures": {
-            "0": {
-              "name": "punctuation.definition.string.begin.rayforce"
-            }
-          },
-          "endCaptures": {
-            "0": {
-              "name": "punctuation.definition.string.end.rayforce"
-            }
-          },
-          "patterns": [
-            {
-              "name": "constant.character.escape.rayforce",
-              "match": "\\\\."
-            }
-          ]
+          "name": "constant.character.escape.rayforce",
+          "match": "\\\\."
         }
       ]
     },
-    "character-literals": {
+    "symbol": {
       "patterns": [
         {
-          "name": "constant.character.rayforce",
-          "match": "'(?:''|[^'])'"
-        }
-      ]
-    },
-    "quoted-symbols": {
-      "patterns": [
-        {
-          "name": "entity.name.type.rayforce",
-          "match": "'(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8)\\b"
+          "name": "constant.other.symbol.rayforce",
+          "match": "`[a-zA-Z_][a-zA-Z0-9_\\-]*"
         },
         {
-          "name": "entity.name.symbol.quoted.rayforce",
-          "begin": "'(?=[a-zA-Z0-9_-])",
-          "end": "(?=[^a-zA-Z0-9_-])",
-          "beginCaptures": {
-            "0": {
-              "name": "punctuation.definition.symbol.rayforce"
-            }
-          }
+          "name": "constant.other.keyword.rayforce",
+          "match": ":[a-zA-Z_][a-zA-Z0-9_\\-?!]*"
         }
       ]
     },
-    "keywords": {
+    "keyword": {
       "patterns": [
         {
           "name": "keyword.control.rayforce",
-          "match": "\\b(fn|do|set|self|let|if|try|return|exit|and|or|quote|raise)\\b"
-        },
-        {
-          "name": "keyword.other.rayforce",
-          "match": "\\b(take|by|from|where|sym|resolve|nil\\?)\\b"
+          "match": "(?<=\\()\\s*(fn|do|let|if|set|try|return|exit|raise|quote|and|or)(?=\\s|\\))"
         }
       ]
     },
-    "functions": {
+    "special-form": {
+      "patterns": [
+        {
+          "name": "keyword.other.rayforce",
+          "match": "(?<=\\()\\s*(select|update|delete|insert|upsert|by|from|where|take)(?=\\s|\\))"
+        }
+      ]
+    },
+    "core-function": {
+      "patterns": [
+        {
+          "name": "support.function.core.rayforce",
+          "match": "(?<=\\()\\s*(get|read|parse|eval|load|type|til|reverse|distinct|group|sum|avg|med|dev|min|max|round|floor|ceil|first|last|count|not|iasc|idesc|rank|asc|desc|neg|key|value|show|meta|raze|row|write|find|concat|remove|filter|in|within|sect|except|union|rand|as|xasc|xdesc|xrank|enum|xbar|split|bin|binr|env|gc|list|enlist|format|print|println|apply|map|pmap|fold|scan|args|alter|modify|hopen|hclose|timer|sysinfo|memstat|guid|date|time|timestamp|ser|de|unify|diverse|at|timeit|loadfn|system|internals|left-join|inner-join|asof-join|window-join|read-csv|set-splayed|get-splayed|set-parted|get-parted|map-left|map-right|fold-left|fold-right|scan-left|scan-right)(?=\\s|\\))"
+        }
+      ]
+    },
+    "function-call": {
       "patterns": [
         {
           "name": "entity.name.function.rayforce",
-          "match": "\\b(get|read|parse|eval|load|type|til|reverse|distinct|group|sum|avg|med|dev|min|max|round|floor|ceil|first|last|count|not|iasc|idesc|rank|asc|desc|guid|neg|where|key|value|ser|de|hclose|rc|select|update|date|time|timestamp|show|meta|os-get-var|system|unify|raze|diverse|row|write|at|find|concat|remove|filter|take|in|within|sect|except|union|rand|as|xasc|xdesc|xrank|enum|xbar|os-set-var|split|bin|binr|env|timeit|memstat|gc|list|enlist|format|print|println|apply|map|pmap|map-left|map-right|fold|fold-left|fold-right|scan|scan-left|scan-right|args|alter|modify|insert|upsert|read-csv|left-join|inner-join|asof-join|window-join|window-join1|return|hopen|exit|loadfn|timer|set-splayed|get-splayed|set-parted|get-parted|internals|sysinfo)\\b"
+          "match": "(?<=\\()\\s*[a-zA-Z_][a-zA-Z0-9_\\-?!]*"
         }
       ]
     },
-    "operators": {
-      "patterns": [
-        {
-          "name": "keyword.operator.comparison.rayforce",
-          "match": "(==|!=|<=|>=|<|>|like)"
-        },
-        {
-          "name": "keyword.operator.arithmetic.rayforce",
-          "match": "(\\+|\\-|\\*|/|%|div)"
-        },
-        {
-          "name": "keyword.operator.other.rayforce",
-          "match": "[&|^~._?]"
-        }
-      ]
-    },
-    "brackets": {
-      "patterns": [
-        {
-          "name": "punctuation.definition.brackets.rayforce",
-          "match": "[()\\[\\]{}]"
-        }
-      ]
-    },
-    "keyword-identifiers": {
-      "patterns": [
-        {
-          "name": "entity.name.tag.rayforce",
-          "match": ":[a-zA-Z0-9_?\\-]+"
-        }
-      ]
-    },
-    "numbers": {
-      "patterns": [
-        {
-          "name": "constant.numeric.integer.rayforce",
-          "match": "\\b-?\\d+\\b"
-        },
-        {
-          "name": "constant.numeric.float.rayforce",
-          "match": "\\b-?\\d+\\.\\d+\\b"
-        }
-      ]
-    },
-    "booleans": {
+    "constant": {
       "patterns": [
         {
           "name": "constant.language.boolean.rayforce",
           "match": "\\b(true|false)\\b"
-        }
-      ]
-    },
-    "type-names": {
-      "patterns": [
+        },
         {
-          "name": "entity.name.type.rayforce",
+          "name": "constant.language.null.rayforce",
+          "match": "\\b(nil|::)\\b"
+        },
+        {
+          "name": "storage.type.rayforce",
           "match": "\\b(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8)\\b"
+        },
+        {
+          "name": "constant.other.timestamp.rayforce",
+          "match": "\\d{4}\\.\\d{2}\\.\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
+        },
+        {
+          "name": "constant.other.date.rayforce",
+          "match": "\\d{4}\\.\\d{2}\\.\\d{2}\\b"
+        },
+        {
+          "name": "constant.other.time.rayforce",
+          "match": "\\b\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?\\b"
+        },
+        {
+          "name": "constant.other.guid.rayforce",
+          "match": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
         }
       ]
     },
-    "temporal-types": {
+    "number": {
       "patterns": [
         {
-          "name": "constant.language.date.rayforce",
-          "match": "\\b\\d{4}\\.\\d{2}\\.\\d{2}\\b"
+          "name": "constant.numeric.float.rayforce",
+          "match": "-?\\d+\\.\\d+(?:[eE][+-]?\\d+)?[fF]?"
         },
         {
-          "name": "constant.language.time.rayforce",
-          "match": "\\b\\d{1,2}:\\d{2}:\\d{2}(?::\\d{3})?\\b"
+          "name": "constant.numeric.integer.rayforce",
+          "match": "-?\\d+[iIjJhHbB]?"
         },
         {
-          "name": "constant.language.timestamp.rayforce",
-          "match": "\\b\\d{4}\\.\\d{2}\\.\\d{2}T\\d{1,2}:\\d{2}:\\d{2}(?::\\d{3})?\\b"
+          "name": "constant.numeric.infinity.rayforce",
+          "match": "-?0[wWnN]"
+        }
+      ]
+    },
+    "operator": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.rayforce",
+          "match": "==|!=|<=|>=|<|>"
         },
         {
-          "name": "constant.language.guid.rayforce",
-          "match": "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b"
+          "name": "keyword.operator.arithmetic.rayforce",
+          "match": "[+\\-*/%]"
+        },
+        {
+          "name": "keyword.operator.logical.rayforce",
+          "match": "[&|!~^]"
+        },
+        {
+          "name": "keyword.operator.other.rayforce",
+          "match": "[.@#$_?]"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.parens.begin.rayforce",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.rayforce",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.section.brackets.begin.rayforce",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.brackets.end.rayforce",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.section.braces.begin.rayforce",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.braces.end.rayforce",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.separator.rayforce",
+          "match": "[;,]"
         }
       ]
     }
-  },
-  "scopeName": "source.rayforce"
+  }
 }
-
