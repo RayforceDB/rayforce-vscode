@@ -576,7 +576,15 @@ export class RayforceIpcClient {
     }
 
     disconnect(): void {
+        // Clear pending operations first
+        if (this.pendingReject) {
+            this.pendingReject(new Error('Disconnected'));
+        }
+        this.pendingResolve = null;
+        this.pendingReject = null;
+        
         if (this.socket) {
+            this.socket.removeAllListeners();
             this.socket.destroy();
             this.socket = null;
         }
@@ -644,6 +652,9 @@ export class RayforceIpcClient {
     }
 
     private handleData(data: Buffer): void {
+        // Ignore data if disconnected
+        if (!this.connected || !this.socket) return;
+        
         this.responseBuffer = Buffer.concat([this.responseBuffer, data]);
         this.tryProcessResponse();
     }
@@ -651,7 +662,7 @@ export class RayforceIpcClient {
     private tryProcessResponse(): void {
         const HEADER_SIZE = 16;
 
-        while (this.responseBuffer.length >= HEADER_SIZE) {
+        while (this.connected && this.responseBuffer.length >= HEADER_SIZE) {
             const header = Deserializer.parseHeader(this.responseBuffer);
             if (!header) break;
 

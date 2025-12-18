@@ -22,13 +22,14 @@ export class RayforceReplPanel {
     private readonly panel: vscode.WebviewPanel;
     private readonly extensionUri: vscode.Uri;
     private disposables: vscode.Disposable[] = [];
-    
+
     private ipcClient: RayforceIpcClient | null = null;
     private port: number | null = null;
     private history: HistoryEntry[] = [];
     private envData: EnvEntry[] = [];
     private showEnv: boolean = true;
     private envWidth: number = 280;
+    private connectionVersion: number = 0;  // Track connection changes to abort stale operations
 
     private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
         this.panel = panel;
@@ -73,6 +74,10 @@ export class RayforceReplPanel {
             return;
         }
 
+        // Increment version to abort any pending operations
+        this.connectionVersion++;
+        const currentVersion = this.connectionVersion;
+
         if (this.ipcClient && this.port && this.port !== port) {
             this.ipcClient.disconnect();
             this.addSystemMessage(`Switching from localhost:${this.port}...`);
@@ -85,9 +90,20 @@ export class RayforceReplPanel {
 
         try {
             await this.ipcClient.connect(5000);
+
+            // Check if connection changed while we were connecting
+            if (this.connectionVersion !== currentVersion) {
+                return;
+            }
+
             this.addSystemMessage(`Connected to localhost:${port}`);
             await this.refreshEnv();
         } catch (err) {
+            // Check if connection changed while we were connecting
+            if (this.connectionVersion !== currentVersion) {
+                return;
+            }
+
             const message = err instanceof Error ? err.message : String(err);
             this.addSystemMessage(`Failed to connect: ${message}`, true);
             this.ipcClient = null;
@@ -99,6 +115,8 @@ export class RayforceReplPanel {
     }
 
     public disconnect(): void {
+        this.connectionVersion++;  // Abort any pending operations
+
         if (this.ipcClient) {
             this.ipcClient.disconnect();
             this.ipcClient = null;
@@ -106,6 +124,7 @@ export class RayforceReplPanel {
             this.updateWebview();
         }
         this.port = null;
+        this.envData = [];
     }
 
     public isConnected(): boolean {
@@ -152,6 +171,8 @@ export class RayforceReplPanel {
     }
 
     private async refreshEnv(): Promise<void> {
+        const currentVersion = this.connectionVersion;
+
         if (!this.ipcClient || !this.ipcClient.isConnected()) {
             this.envData = [];
             this.updateWebview();
@@ -160,58 +181,52 @@ export class RayforceReplPanel {
 
         try {
             const result = await this.ipcClient.execute('(env)');
-            this.envData = await this.parseEnvResult(result);
+
+            // Abort if connection changed
+            if (this.connectionVersion !== currentVersion) return;
+
+            this.envData = this.parseEnvResult(result);
         } catch (err) {
+            // Abort if connection changed
+            if (this.connectionVersion !== currentVersion) return;
+
             this.envData = [];
         }
-        
+
         this.updateWebview();
     }
 
-    private async parseEnvResult(result: RayforceValue): Promise<EnvEntry[]> {
+    private parseEnvResult(result: RayforceValue): EnvEntry[] {
         const entries: EnvEntry[] = [];
-        
+
         if (result && typeof result === 'object' && '_type' in result && result._type === 'dict') {
             const dict = result as RayforceDict;
             const keys = dict.keys;
             const values = dict.values;
-            
+
             if (Array.isArray(keys) && Array.isArray(values)) {
                 for (let i = 0; i < keys.length; i++) {
                     const key = keys[i];
                     const val = values[i];
-                    
-                    const name = typeof key === 'symbol' 
+
+                    const name = typeof key === 'symbol'
                         ? Symbol.keyFor(key) || String(key)
                         : String(key);
-                    
+
                     // Skip internal/system variables
                     if (name.startsWith('.')) continue;
-                    
-                    // Get the actual Rayforce type using (type varname)
-                    let type = 'unknown';
-                    try {
-                        if (this.ipcClient && this.ipcClient.isConnected()) {
-                            const typeResult = await this.ipcClient.execute(`(type ${name})`);
-                            if (typeof typeResult === 'symbol') {
-                                type = Symbol.keyFor(typeResult) || String(typeResult);
-                            } else if (typeof typeResult === 'string') {
-                                type = typeResult;
-                            }
-                        }
-                    } catch {
-                        type = this.inferType(val);
-                    }
-                    
+
+                    // Infer type from value (avoids expensive IPC calls)
+                    const type = this.inferType(val);
                     const value = this.formatShortValue(val);
                     entries.push({ name, type, value });
                 }
             }
         }
-        
+
         // Sort alphabetically
         entries.sort((a, b) => a.name.localeCompare(b.name));
-        
+
         return entries;
     }
 
@@ -226,27 +241,34 @@ export class RayforceReplPanel {
     }
 
     private async inspectVariable(name: string): Promise<void> {
+        const currentVersion = this.connectionVersion;
+
         if (!this.ipcClient || !this.ipcClient.isConnected()) {
             return;
         }
 
         try {
             const result = await this.ipcClient.execute(name);
-            
+
+            // Abort if connection changed
+            if (this.connectionVersion !== currentVersion) return;
+
             this.history.push({
                 input: name,
                 output: result,
                 isError: isError(result),
                 isSystem: false
             });
-            
+
             this.updateWebview();
         } catch (err) {
-            // Ignore
+            // Ignore - connection likely changed
         }
     }
 
     private async executeCommand(input: string): Promise<void> {
+        const currentVersion = this.connectionVersion;
+
         if (!input.trim()) return;
 
         if (!this.ipcClient || !this.ipcClient.isConnected()) {
@@ -262,6 +284,10 @@ export class RayforceReplPanel {
 
         try {
             const result = await this.ipcClient.execute(input);
+
+            // Abort if connection changed
+            if (this.connectionVersion !== currentVersion) return;
+
             this.history.push({
                 input,
                 output: result,
@@ -269,6 +295,9 @@ export class RayforceReplPanel {
                 isSystem: false
             });
         } catch (err) {
+            // Abort if connection changed
+            if (this.connectionVersion !== currentVersion) return;
+
             this.history.push({
                 input,
                 output: err instanceof Error ? err.message : String(err),
@@ -287,7 +316,7 @@ export class RayforceReplPanel {
 
     private updateWebview(): void {
         this.panel.webview.html = this.getHtmlContent();
-        this.panel.title = this.port 
+        this.panel.title = this.port
             ? `Rayforce REPL — localhost:${this.port}`
             : 'Rayforce REPL — Disconnected';
     }
@@ -300,7 +329,7 @@ export class RayforceReplPanel {
         const logoWhiteUri = this.panel.webview.asWebviewUri(
             vscode.Uri.joinPath(this.extensionUri, 'assets', 'logo_white.svg')
         );
-        
+
         const historyHtml = this.history.map(item => {
             if (item.isSystem) {
                 // System message - render as plain text
@@ -311,7 +340,7 @@ export class RayforceReplPanel {
                 `;
             } else if (item.input) {
                 // User command with output - render with pretty print
-                const outputHtml = typeof item.output === 'string' 
+                const outputHtml = typeof item.output === 'string'
                     ? `<span class="rf-error">${this.escapeHtml(item.output)}</span>`
                     : formatValueHtml(item.output as RayforceValue);
                 return `
@@ -807,9 +836,9 @@ export class RayforceReplPanel {
                     <img src="${logoWhiteUri}" class="empty-state-logo logo-dark" alt="Rayforce" />
                     <img src="${logoBlackUri}" class="empty-state-logo logo-light" alt="Rayforce" />
                     <div class="empty-state-text">
-                        ${isConnected 
-                            ? 'Ready to execute Rayforce commands' 
-                            : 'Connect to a Rayforce instance to start'}
+                        ${isConnected
+                    ? 'Ready to execute Rayforce commands'
+                    : 'Connect to a Rayforce instance to start'}
                     </div>
                     
                 </div>
@@ -847,15 +876,15 @@ export class RayforceReplPanel {
             </div>
         </div>
         <div class="env-content">
-            ${this.envData.length === 0 
-                ? `<div class="env-empty">${isConnected ? 'No variables defined' : 'Not connected'}</div>`
-                : this.envData.map(entry => `
+            ${this.envData.length === 0
+                    ? `<div class="env-empty">${isConnected ? 'No variables defined' : 'Not connected'}</div>`
+                    : this.envData.map(entry => `
                     <div class="env-item" onclick="inspectVar('${entry.name.replace(/'/g, "\\'")}')" title="${this.escapeHtml(entry.value)}">
                         <span class="env-item-name">${this.escapeHtml(entry.name)}</span>
                         <span class="env-item-type">${entry.type}</span>
                     </div>
                 `).join('')
-            }
+                }
         </div>
     </div>
     ` : ''}
@@ -1208,7 +1237,7 @@ export class RayforceReplPanel {
 
     private highlightSyntax(code: string): string {
         if (!code) return '';
-        
+
         const KEYWORDS = new Set(['fn', 'do', 'let', 'if', 'cond', 'when', 'unless', 'set', 'try', 'catch', 'return', 'exit', 'raise', 'throw', 'quote', 'and', 'or', 'def', 'defn', 'loop', 'recur']);
         const QUERY_KW = new Set(['select', 'update', 'delete', 'insert', 'upsert', 'alter', 'modify', 'from', 'where', 'by', 'take', 'into', 'as']);
         const CORE_FNS = new Set(['list', 'enlist', 'table', 'dict', 'first', 'last', 'count', 'reverse', 'distinct', 'raze', 'concat', 'remove', 'filter', 'til', 'drop', 'row', 'key', 'value', 'keys', 'values', 'flip', 'get', 'at', 'in', 'within', 'sect', 'except', 'union', 'find', 'group', 'ungroup', 'enum', 'xbar', 'split', 'bin', 'binr', 'sum', 'avg', 'med', 'dev', 'var', 'min', 'max', 'all', 'any', 'prod', 'wavg', 'wsum', 'cov', 'cor', 'sums', 'prds', 'mins', 'maxs', 'avgs', 'msum', 'mcount', 'mavg', 'mmin', 'mmax', 'abs', 'neg', 'floor', 'ceil', 'round', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'signum', 'mod', 'div', 'reciprocal', 'asc', 'desc', 'iasc', 'idesc', 'rank', 'xasc', 'xdesc', 'xrank', 'sort', 'apply', 'map', 'pmap', 'fold', 'scan', 'map-left', 'map-right', 'fold-left', 'fold-right', 'scan-left', 'scan-right', 'each', 'peach', 'over', 'converge', 'left-join', 'inner-join', 'asof-join', 'window-join', 'lj', 'ij', 'aj', 'wj', 'uj', 'pj', 'read', 'write', 'read-csv', 'write-csv', 'hopen', 'hclose', 'load', 'save', 'set-splayed', 'get-splayed', 'set-parted', 'get-parted', 'system', 'type', 'meta', 'parse', 'eval', 'format', 'show', 'print', 'println', 'ser', 'de', 'resolve', 'nil?', 'null?', 'empty?', 'atom?', 'list?', 'date', 'time', 'timestamp', 'guid', 'year', 'month', 'mm', 'dd', 'hh', 'mi', 'ss', 'ms', 'lower', 'upper', 'trim', 'ltrim', 'rtrim', 'like', 'ss', 'ssr', 'vs', 'sv', 'rand', 'deal', 'roll', 'env', 'gc', 'args', 'timer', 'sysinfo', 'memstat', 'timeit', 'loadfn', 'internals', 'not', 'unify', 'diverse']);
@@ -1218,11 +1247,11 @@ export class RayforceReplPanel {
 
         let result = '';
         let i = 0;
-        
+
         while (i < code.length) {
             const ch = code[i];
             const rest = code.slice(i);
-            
+
             // Comment
             if (ch === ';') {
                 const end = code.indexOf('\n', i);
@@ -1231,7 +1260,7 @@ export class RayforceReplPanel {
                 i += comment.length;
                 continue;
             }
-            
+
             // String
             if (ch === '"') {
                 let j = i + 1;
@@ -1244,7 +1273,7 @@ export class RayforceReplPanel {
                 i = j + 1;
                 continue;
             }
-            
+
             // Quoted symbol 'symbol
             if (ch === "'" && i + 1 < code.length && /[a-zA-Z_]/.test(code[i + 1])) {
                 const match = rest.match(/^'[a-zA-Z_][a-zA-Z0-9_\-?!.]*/);
@@ -1254,7 +1283,7 @@ export class RayforceReplPanel {
                     continue;
                 }
             }
-            
+
             // Keyword :keyword
             if (ch === ':' && i + 1 < code.length && /[a-zA-Z_]/.test(code[i + 1])) {
                 const match = rest.match(/^:[a-zA-Z_][a-zA-Z0-9_\-?!]*/);
@@ -1264,7 +1293,7 @@ export class RayforceReplPanel {
                     continue;
                 }
             }
-            
+
             // GUID
             const guidMatch = rest.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
             if (guidMatch) {
@@ -1272,7 +1301,7 @@ export class RayforceReplPanel {
                 i += guidMatch[0].length;
                 continue;
             }
-            
+
             // Timestamp YYYY.MM.DDThh:mm:ss
             const tsMatch = rest.match(/^\d{4}\.\d{2}\.\d{2}[DT]\d{2}:\d{2}:\d{2}(?:\.\d+)?/);
             if (tsMatch) {
@@ -1280,7 +1309,7 @@ export class RayforceReplPanel {
                 i += tsMatch[0].length;
                 continue;
             }
-            
+
             // Date YYYY.MM.DD
             const dateMatch = rest.match(/^\d{4}\.\d{2}\.\d{2}(?![DT])/);
             if (dateMatch) {
@@ -1288,7 +1317,7 @@ export class RayforceReplPanel {
                 i += dateMatch[0].length;
                 continue;
             }
-            
+
             // Time HH:MM:SS
             const timeMatch = rest.match(/^-?\d{1,2}:\d{2}:\d{2}(?:\.\d+)?/);
             if (timeMatch) {
@@ -1296,7 +1325,7 @@ export class RayforceReplPanel {
                 i += timeMatch[0].length;
                 continue;
             }
-            
+
             // Null literals 0N...
             const nullMatch = rest.match(/^0N[0hiditplgsfp]/);
             if (nullMatch) {
@@ -1304,7 +1333,7 @@ export class RayforceReplPanel {
                 i += nullMatch[0].length;
                 continue;
             }
-            
+
             // Infinity/NaN
             const infMatch = rest.match(/^-?0[wWnN]/);
             if (infMatch) {
@@ -1312,7 +1341,7 @@ export class RayforceReplPanel {
                 i += infMatch[0].length;
                 continue;
             }
-            
+
             // Hex number
             const hexMatch = rest.match(/^0x[0-9a-fA-F]+/);
             if (hexMatch) {
@@ -1320,7 +1349,7 @@ export class RayforceReplPanel {
                 i += hexMatch[0].length;
                 continue;
             }
-            
+
             // Float number
             const floatMatch = rest.match(/^-?\d+\.\d+(?:[eE][+-]?\d+)?[fF]?/);
             if (floatMatch) {
@@ -1328,15 +1357,15 @@ export class RayforceReplPanel {
                 i += floatMatch[0].length;
                 continue;
             }
-            
+
             // Integer number
             const intMatch = rest.match(/^-?\d+[iIjJhHbBlL]?/);
-            if (intMatch && (i === 0 || !/[a-zA-Z_]/.test(code[i-1]))) {
+            if (intMatch && (i === 0 || !/[a-zA-Z_]/.test(code[i - 1]))) {
                 result += `<span class="syn-number">${this.escapeHtml(intMatch[0])}</span>`;
                 i += intMatch[0].length;
                 continue;
             }
-            
+
             // Identifier or keyword
             const idMatch = rest.match(/^[a-zA-Z_][a-zA-Z0-9_\-?!]*/);
             if (idMatch) {
@@ -1349,45 +1378,45 @@ export class RayforceReplPanel {
                 else if (CONSTANTS.has(word)) cls = 'syn-constant';
                 else if (SPECIAL_VARS.has(word)) cls = 'syn-special-var';
                 else cls = 'syn-function';
-                
+
                 result += `<span class="${cls}">${this.escapeHtml(word)}</span>`;
                 i += word.length;
                 continue;
             }
-            
+
             // Parentheses
             if (ch === '(' || ch === ')') {
                 result += `<span class="syn-paren">${this.escapeHtml(ch)}</span>`;
                 i++;
                 continue;
             }
-            
+
             // Brackets
             if (ch === '[' || ch === ']') {
                 result += `<span class="syn-bracket">${this.escapeHtml(ch)}</span>`;
                 i++;
                 continue;
             }
-            
+
             // Braces
             if (ch === '{' || ch === '}') {
                 result += `<span class="syn-brace">${this.escapeHtml(ch)}</span>`;
                 i++;
                 continue;
             }
-            
+
             // Operators
             if ('+-*/%&|^~<>!=@#$_.?'.includes(ch)) {
                 result += `<span class="syn-operator">${this.escapeHtml(ch)}</span>`;
                 i++;
                 continue;
             }
-            
+
             // Default
             result += this.escapeHtml(ch);
             i++;
         }
-        
+
         return result;
     }
 

@@ -43,6 +43,10 @@ export async function activate(context: vscode.ExtensionContext) {
     const connectCommand = vscode.commands.registerCommand(
         'rayforce.connectToInstance',
         async (item: RayforceInstanceItem) => {
+            // Guard against invalid arguments
+            if (!item || !(item instanceof RayforceInstanceItem) || !item.process) {
+                return;
+            }
             const result = await instancesProvider.connectToInstance(item);
             if (result.success) {
                 const panel = RayforceReplPanel.createOrShow(context.extensionUri);
@@ -56,6 +60,10 @@ export async function activate(context: vscode.ExtensionContext) {
     const connectRemoteCommand = vscode.commands.registerCommand(
         'rayforce.connectToRemote',
         async (item: RemoteInstanceItem) => {
+            // Guard against invalid arguments
+            if (!item || !(item instanceof RemoteInstanceItem) || !item.connection) {
+                return;
+            }
             const result = await instancesProvider.connectToRemote(item);
             if (result.success) {
                 const panel = RayforceReplPanel.createOrShow(context.extensionUri);
@@ -104,13 +112,11 @@ export async function activate(context: vscode.ExtensionContext) {
         async (item?: InstanceItem) => {
             const panel = RayforceReplPanel.createOrShow(context.extensionUri);
             
-            if (item) {
-                if (item instanceof RayforceInstanceItem) {
-                    try { await panel.connect('localhost', item.process.port); } catch {}
-                } else if (item instanceof RemoteInstanceItem) {
-                    try { await panel.connect(item.connection.host, item.connection.port); } catch {}
-                }
-            } else {
+            if (item && item instanceof RayforceInstanceItem && item.process) {
+                try { await panel.connect('localhost', item.process.port); } catch {}
+            } else if (item && item instanceof RemoteInstanceItem && item.connection) {
+                try { await panel.connect(item.connection.host, item.connection.port); } catch {}
+            } else if (!item) {
                 const host = instancesProvider.getConnectedHost();
                 const port = instancesProvider.getConnectedPort();
                 if (host && port && !panel.isConnected()) {
