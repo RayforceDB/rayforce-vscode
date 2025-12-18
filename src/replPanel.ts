@@ -306,7 +306,7 @@ export class RayforceReplPanel {
                     : formatValueHtml(item.output as RayforceValue);
                 return `
                     <div class="history-item">
-                        <div class="input-line"><span class="prompt-char">&gt;</span> <span class="input-text">${this.escapeHtml(item.input)}</span></div>
+                        <div class="input-line"><span class="prompt-char">&gt;</span> <span class="input-text">${this.highlightSyntax(item.input)}</span></div>
                         <div class="output-line ${item.isError ? 'error-output' : ''}">${outputHtml}</div>
                     </div>
                 `;
@@ -552,7 +552,7 @@ export class RayforceReplPanel {
         }
 
         .input-text {
-            color: var(--accent);
+            /* Syntax highlighting colors are applied via span classes */
         }
 
         .output-line {
@@ -602,20 +602,66 @@ export class RayforceReplPanel {
             border-color: var(--focus-border);
         }
 
-        #command-input {
+        .input-container {
             flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+        }
+
+        #command-input {
+            width: 100%;
             background: transparent;
             border: none;
-            color: var(--text-primary);
+            color: transparent;
+            caret-color: var(--text-primary);
             font-family: inherit;
             font-size: 13px;
             outline: none;
+            position: relative;
+            z-index: 2;
+            padding: 0;
+            margin: 0;
+            line-height: 1.4;
         }
 
         #command-input::placeholder {
             color: var(--text-secondary);
             opacity: 0.7;
         }
+
+        #syntax-highlight {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.4;
+            white-space: pre;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Syntax highlighting colors - DuckDB style */
+        .syn-comment { color: var(--vscode-terminal-ansiBrightBlack, #6a737d); font-style: italic; }
+        .syn-string { color: var(--vscode-terminal-ansiYellow, #e5c07b); }
+        .syn-number { color: var(--vscode-terminal-ansiYellow, #e5c07b); }
+        .syn-keyword { color: var(--vscode-terminal-ansiGreen, #98c379); font-weight: 500; }
+        .syn-function { color: var(--vscode-terminal-ansiCyan, #56b6c2); }
+        .syn-core-fn { color: var(--vscode-terminal-ansiCyan, #56b6c2); }
+        .syn-symbol { color: var(--vscode-terminal-ansiMagenta, #c678dd); }
+        .syn-type { color: var(--vscode-terminal-ansiBlue, #61afef); }
+        .syn-constant { color: var(--vscode-terminal-ansiYellow, #e5c07b); }
+        .syn-operator { color: var(--text-primary); }
+        .syn-paren { color: var(--text-secondary); }
+        .syn-bracket { color: var(--text-secondary); }
+        .syn-brace { color: var(--text-secondary); }
+        .syn-special-var { color: var(--vscode-terminal-ansiRed, #e06c75); font-style: italic; }
 
         .submit-btn {
             background: var(--button-bg);
@@ -745,14 +791,17 @@ export class RayforceReplPanel {
         <div class="input-area">
             <div class="input-wrapper">
                 <span class="input-prompt-char">&gt;</span>
-                <input 
-                    type="text" 
-                    id="command-input" 
-                    placeholder="${isConnected ? 'Enter Rayfall expression...' : 'Not connected'}"
-                    ${isConnected ? '' : 'disabled'}
-                    autocomplete="off"
-                    spellcheck="false"
-                />
+                <div class="input-container">
+                    <div id="syntax-highlight"></div>
+                    <input 
+                        type="text" 
+                        id="command-input" 
+                        placeholder="${isConnected ? 'Enter Rayfall expression...' : 'Not connected'}"
+                        ${isConnected ? '' : 'disabled'}
+                        autocomplete="off"
+                        spellcheck="false"
+                    />
+                </div>
                 <button class="submit-btn" onclick="executeCommand()" ${isConnected ? '' : 'disabled'}>
                     Run
                 </button>
@@ -786,6 +835,7 @@ export class RayforceReplPanel {
         const vscode = acquireVsCodeApi();
         const input = document.getElementById('command-input');
         const history = document.getElementById('history');
+        const syntaxHighlight = document.getElementById('syntax-highlight');
         
         const state = vscode.getState() || { commandHistory: [], historyIndex: -1, inputValue: '' };
         let commandHistory = state.commandHistory;
@@ -793,9 +843,206 @@ export class RayforceReplPanel {
         
         if (input && state.inputValue) {
             input.value = state.inputValue;
+            updateHighlight();
         }
 
         history.scrollTop = history.scrollHeight;
+
+        // Rayfall syntax highlighting
+        const KEYWORDS = new Set(['fn', 'do', 'let', 'if', 'cond', 'when', 'unless', 'set', 'try', 'catch', 'return', 'exit', 'raise', 'throw', 'quote', 'and', 'or', 'def', 'defn', 'loop', 'recur']);
+        const QUERY_KW = new Set(['select', 'update', 'delete', 'insert', 'upsert', 'alter', 'modify', 'from', 'where', 'by', 'take', 'into', 'as']);
+        const CORE_FNS = new Set(['list', 'enlist', 'table', 'dict', 'first', 'last', 'count', 'reverse', 'distinct', 'raze', 'concat', 'remove', 'filter', 'til', 'drop', 'row', 'key', 'value', 'keys', 'values', 'flip', 'get', 'at', 'in', 'within', 'sect', 'except', 'union', 'find', 'group', 'ungroup', 'enum', 'xbar', 'split', 'bin', 'binr', 'sum', 'avg', 'med', 'dev', 'var', 'min', 'max', 'all', 'any', 'prod', 'wavg', 'wsum', 'cov', 'cor', 'sums', 'prds', 'mins', 'maxs', 'avgs', 'msum', 'mcount', 'mavg', 'mmin', 'mmax', 'abs', 'neg', 'floor', 'ceil', 'round', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'signum', 'mod', 'div', 'reciprocal', 'asc', 'desc', 'iasc', 'idesc', 'rank', 'xasc', 'xdesc', 'xrank', 'sort', 'apply', 'map', 'pmap', 'fold', 'scan', 'map-left', 'map-right', 'fold-left', 'fold-right', 'scan-left', 'scan-right', 'each', 'peach', 'over', 'converge', 'left-join', 'inner-join', 'asof-join', 'window-join', 'lj', 'ij', 'aj', 'wj', 'uj', 'pj', 'read', 'write', 'read-csv', 'write-csv', 'hopen', 'hclose', 'load', 'save', 'set-splayed', 'get-splayed', 'set-parted', 'get-parted', 'system', 'type', 'meta', 'parse', 'eval', 'format', 'show', 'print', 'println', 'ser', 'de', 'resolve', 'nil?', 'null?', 'empty?', 'atom?', 'list?', 'date', 'time', 'timestamp', 'guid', 'year', 'month', 'mm', 'dd', 'hh', 'mi', 'ss', 'ms', 'lower', 'upper', 'trim', 'ltrim', 'rtrim', 'like', 'ss', 'ssr', 'vs', 'sv', 'rand', 'deal', 'roll', 'env', 'gc', 'args', 'timer', 'sysinfo', 'memstat', 'timeit', 'loadfn', 'internals', 'not', 'unify', 'diverse']);
+        const TYPES = new Set(['Timestamp', 'String', 'F64', 'I64', 'Bool', 'Symbol', 'Time', 'Date', 'Guid', 'Char', 'I32', 'F32', 'U64', 'U32', 'I16', 'U16', 'I8', 'U8', 'B8', 'C8', 'List', 'Table', 'Dict', 'Lambda']);
+        const CONSTANTS = new Set(['true', 'false', 'nil']);
+        const SPECIAL_VARS = new Set(['self', 'it']);
+
+        function escapeHtml(text) {
+            return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function highlightSyntax(code) {
+            if (!code) return '';
+            
+            let result = '';
+            let i = 0;
+            
+            while (i < code.length) {
+                const ch = code[i];
+                const rest = code.slice(i);
+                
+                // Comment
+                if (ch === ';') {
+                    const end = code.indexOf('\\n', i);
+                    const comment = end === -1 ? code.slice(i) : code.slice(i, end);
+                    result += '<span class="syn-comment">' + escapeHtml(comment) + '</span>';
+                    i += comment.length;
+                    continue;
+                }
+                
+                // String
+                if (ch === '"') {
+                    let j = i + 1;
+                    while (j < code.length && code[j] !== '"') {
+                        if (code[j] === '\\\\' && j + 1 < code.length) j += 2;
+                        else j++;
+                    }
+                    const str = code.slice(i, j + 1);
+                    result += '<span class="syn-string">' + escapeHtml(str) + '</span>';
+                    i = j + 1;
+                    continue;
+                }
+                
+                // Quoted symbol 'symbol
+                if (ch === "'" && i + 1 < code.length && /[a-zA-Z_]/.test(code[i + 1])) {
+                    const match = rest.match(/^'[a-zA-Z_][a-zA-Z0-9_\\-?!.]*/);
+                    if (match) {
+                        result += '<span class="syn-symbol">' + escapeHtml(match[0]) + '</span>';
+                        i += match[0].length;
+                        continue;
+                    }
+                }
+                
+                // Keyword :keyword
+                if (ch === ':' && i + 1 < code.length && /[a-zA-Z_]/.test(code[i + 1])) {
+                    const match = rest.match(/^:[a-zA-Z_][a-zA-Z0-9_\\-?!]*/);
+                    if (match) {
+                        result += '<span class="syn-symbol">' + escapeHtml(match[0]) + '</span>';
+                        i += match[0].length;
+                        continue;
+                    }
+                }
+                
+                // GUID
+                const guidMatch = rest.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+                if (guidMatch) {
+                    result += '<span class="syn-constant">' + escapeHtml(guidMatch[0]) + '</span>';
+                    i += guidMatch[0].length;
+                    continue;
+                }
+                
+                // Timestamp YYYY.MM.DDThh:mm:ss
+                const tsMatch = rest.match(/^\\d{4}\\.\\d{2}\\.\\d{2}[DT]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?/);
+                if (tsMatch) {
+                    result += '<span class="syn-constant">' + escapeHtml(tsMatch[0]) + '</span>';
+                    i += tsMatch[0].length;
+                    continue;
+                }
+                
+                // Date YYYY.MM.DD
+                const dateMatch = rest.match(/^\\d{4}\\.\\d{2}\\.\\d{2}(?![DT])/);
+                if (dateMatch) {
+                    result += '<span class="syn-constant">' + escapeHtml(dateMatch[0]) + '</span>';
+                    i += dateMatch[0].length;
+                    continue;
+                }
+                
+                // Time HH:MM:SS
+                const timeMatch = rest.match(/^-?\\d{1,2}:\\d{2}:\\d{2}(?:\\.\\d+)?/);
+                if (timeMatch) {
+                    result += '<span class="syn-constant">' + escapeHtml(timeMatch[0]) + '</span>';
+                    i += timeMatch[0].length;
+                    continue;
+                }
+                
+                // Null literals 0N...
+                const nullMatch = rest.match(/^0N[0hiditplgsfp]/);
+                if (nullMatch) {
+                    result += '<span class="syn-constant">' + escapeHtml(nullMatch[0]) + '</span>';
+                    i += nullMatch[0].length;
+                    continue;
+                }
+                
+                // Infinity/NaN
+                const infMatch = rest.match(/^-?0[wWnN]/);
+                if (infMatch) {
+                    result += '<span class="syn-constant">' + escapeHtml(infMatch[0]) + '</span>';
+                    i += infMatch[0].length;
+                    continue;
+                }
+                
+                // Hex number
+                const hexMatch = rest.match(/^0x[0-9a-fA-F]+/);
+                if (hexMatch) {
+                    result += '<span class="syn-number">' + escapeHtml(hexMatch[0]) + '</span>';
+                    i += hexMatch[0].length;
+                    continue;
+                }
+                
+                // Float number
+                const floatMatch = rest.match(/^-?\\d+\\.\\d+(?:[eE][+-]?\\d+)?[fF]?/);
+                if (floatMatch) {
+                    result += '<span class="syn-number">' + escapeHtml(floatMatch[0]) + '</span>';
+                    i += floatMatch[0].length;
+                    continue;
+                }
+                
+                // Integer number
+                const intMatch = rest.match(/^-?\\d+[iIjJhHbBlL]?/);
+                if (intMatch && (i === 0 || !/[a-zA-Z_]/.test(code[i-1]))) {
+                    result += '<span class="syn-number">' + escapeHtml(intMatch[0]) + '</span>';
+                    i += intMatch[0].length;
+                    continue;
+                }
+                
+                // Identifier or keyword
+                const idMatch = rest.match(/^[a-zA-Z_][a-zA-Z0-9_\\-?!]*/);
+                if (idMatch) {
+                    const word = idMatch[0];
+                    let cls = '';
+                    if (KEYWORDS.has(word)) cls = 'syn-keyword';
+                    else if (QUERY_KW.has(word)) cls = 'syn-keyword';
+                    else if (CORE_FNS.has(word)) cls = 'syn-core-fn';
+                    else if (TYPES.has(word)) cls = 'syn-type';
+                    else if (CONSTANTS.has(word)) cls = 'syn-constant';
+                    else if (SPECIAL_VARS.has(word)) cls = 'syn-special-var';
+                    else cls = 'syn-function';
+                    
+                    result += '<span class="' + cls + '">' + escapeHtml(word) + '</span>';
+                    i += word.length;
+                    continue;
+                }
+                
+                // Parentheses
+                if (ch === '(' || ch === ')') {
+                    result += '<span class="syn-paren">' + escapeHtml(ch) + '</span>';
+                    i++;
+                    continue;
+                }
+                
+                // Brackets
+                if (ch === '[' || ch === ']') {
+                    result += '<span class="syn-bracket">' + escapeHtml(ch) + '</span>';
+                    i++;
+                    continue;
+                }
+                
+                // Braces
+                if (ch === '{' || ch === '}') {
+                    result += '<span class="syn-brace">' + escapeHtml(ch) + '</span>';
+                    i++;
+                    continue;
+                }
+                
+                // Operators
+                if ('+-*/%&|^~<>!=@#$_.?'.includes(ch)) {
+                    result += '<span class="syn-operator">' + escapeHtml(ch) + '</span>';
+                    i++;
+                    continue;
+                }
+                
+                // Default
+                result += escapeHtml(ch);
+                i++;
+            }
+            
+            return result;
+        }
+
+        function updateHighlight() {
+            if (syntaxHighlight && input) {
+                syntaxHighlight.innerHTML = highlightSyntax(input.value);
+            }
+        }
 
         if (input) {
             input.addEventListener('keydown', (e) => {
@@ -812,6 +1059,7 @@ export class RayforceReplPanel {
             });
 
             input.addEventListener('input', () => {
+                updateHighlight();
                 saveState();
             });
         }
@@ -846,12 +1094,14 @@ export class RayforceReplPanel {
             } else if (historyIndex >= commandHistory.length) {
                 historyIndex = commandHistory.length;
                 input.value = '';
+                updateHighlight();
                 saveState();
                 return;
             }
             
             input.value = commandHistory[historyIndex];
             input.setSelectionRange(input.value.length, input.value.length);
+            updateHighlight();
             saveState();
         }
 
@@ -888,6 +1138,191 @@ export class RayforceReplPanel {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    private highlightSyntax(code: string): string {
+        if (!code) return '';
+        
+        const KEYWORDS = new Set(['fn', 'do', 'let', 'if', 'cond', 'when', 'unless', 'set', 'try', 'catch', 'return', 'exit', 'raise', 'throw', 'quote', 'and', 'or', 'def', 'defn', 'loop', 'recur']);
+        const QUERY_KW = new Set(['select', 'update', 'delete', 'insert', 'upsert', 'alter', 'modify', 'from', 'where', 'by', 'take', 'into', 'as']);
+        const CORE_FNS = new Set(['list', 'enlist', 'table', 'dict', 'first', 'last', 'count', 'reverse', 'distinct', 'raze', 'concat', 'remove', 'filter', 'til', 'drop', 'row', 'key', 'value', 'keys', 'values', 'flip', 'get', 'at', 'in', 'within', 'sect', 'except', 'union', 'find', 'group', 'ungroup', 'enum', 'xbar', 'split', 'bin', 'binr', 'sum', 'avg', 'med', 'dev', 'var', 'min', 'max', 'all', 'any', 'prod', 'wavg', 'wsum', 'cov', 'cor', 'sums', 'prds', 'mins', 'maxs', 'avgs', 'msum', 'mcount', 'mavg', 'mmin', 'mmax', 'abs', 'neg', 'floor', 'ceil', 'round', 'sqrt', 'exp', 'log', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'signum', 'mod', 'div', 'reciprocal', 'asc', 'desc', 'iasc', 'idesc', 'rank', 'xasc', 'xdesc', 'xrank', 'sort', 'apply', 'map', 'pmap', 'fold', 'scan', 'map-left', 'map-right', 'fold-left', 'fold-right', 'scan-left', 'scan-right', 'each', 'peach', 'over', 'converge', 'left-join', 'inner-join', 'asof-join', 'window-join', 'lj', 'ij', 'aj', 'wj', 'uj', 'pj', 'read', 'write', 'read-csv', 'write-csv', 'hopen', 'hclose', 'load', 'save', 'set-splayed', 'get-splayed', 'set-parted', 'get-parted', 'system', 'type', 'meta', 'parse', 'eval', 'format', 'show', 'print', 'println', 'ser', 'de', 'resolve', 'nil?', 'null?', 'empty?', 'atom?', 'list?', 'date', 'time', 'timestamp', 'guid', 'year', 'month', 'mm', 'dd', 'hh', 'mi', 'ss', 'ms', 'lower', 'upper', 'trim', 'ltrim', 'rtrim', 'like', 'ss', 'ssr', 'vs', 'sv', 'rand', 'deal', 'roll', 'env', 'gc', 'args', 'timer', 'sysinfo', 'memstat', 'timeit', 'loadfn', 'internals', 'not', 'unify', 'diverse']);
+        const TYPES = new Set(['Timestamp', 'String', 'F64', 'I64', 'Bool', 'Symbol', 'Time', 'Date', 'Guid', 'Char', 'I32', 'F32', 'U64', 'U32', 'I16', 'U16', 'I8', 'U8', 'B8', 'C8', 'List', 'Table', 'Dict', 'Lambda']);
+        const CONSTANTS = new Set(['true', 'false', 'nil']);
+        const SPECIAL_VARS = new Set(['self', 'it']);
+
+        let result = '';
+        let i = 0;
+        
+        while (i < code.length) {
+            const ch = code[i];
+            const rest = code.slice(i);
+            
+            // Comment
+            if (ch === ';') {
+                const end = code.indexOf('\n', i);
+                const comment = end === -1 ? code.slice(i) : code.slice(i, end);
+                result += `<span class="syn-comment">${this.escapeHtml(comment)}</span>`;
+                i += comment.length;
+                continue;
+            }
+            
+            // String
+            if (ch === '"') {
+                let j = i + 1;
+                while (j < code.length && code[j] !== '"') {
+                    if (code[j] === '\\' && j + 1 < code.length) j += 2;
+                    else j++;
+                }
+                const str = code.slice(i, j + 1);
+                result += `<span class="syn-string">${this.escapeHtml(str)}</span>`;
+                i = j + 1;
+                continue;
+            }
+            
+            // Quoted symbol 'symbol
+            if (ch === "'" && i + 1 < code.length && /[a-zA-Z_]/.test(code[i + 1])) {
+                const match = rest.match(/^'[a-zA-Z_][a-zA-Z0-9_\-?!.]*/);
+                if (match) {
+                    result += `<span class="syn-symbol">${this.escapeHtml(match[0])}</span>`;
+                    i += match[0].length;
+                    continue;
+                }
+            }
+            
+            // Keyword :keyword
+            if (ch === ':' && i + 1 < code.length && /[a-zA-Z_]/.test(code[i + 1])) {
+                const match = rest.match(/^:[a-zA-Z_][a-zA-Z0-9_\-?!]*/);
+                if (match) {
+                    result += `<span class="syn-symbol">${this.escapeHtml(match[0])}</span>`;
+                    i += match[0].length;
+                    continue;
+                }
+            }
+            
+            // GUID
+            const guidMatch = rest.match(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+            if (guidMatch) {
+                result += `<span class="syn-constant">${this.escapeHtml(guidMatch[0])}</span>`;
+                i += guidMatch[0].length;
+                continue;
+            }
+            
+            // Timestamp YYYY.MM.DDThh:mm:ss
+            const tsMatch = rest.match(/^\d{4}\.\d{2}\.\d{2}[DT]\d{2}:\d{2}:\d{2}(?:\.\d+)?/);
+            if (tsMatch) {
+                result += `<span class="syn-constant">${this.escapeHtml(tsMatch[0])}</span>`;
+                i += tsMatch[0].length;
+                continue;
+            }
+            
+            // Date YYYY.MM.DD
+            const dateMatch = rest.match(/^\d{4}\.\d{2}\.\d{2}(?![DT])/);
+            if (dateMatch) {
+                result += `<span class="syn-constant">${this.escapeHtml(dateMatch[0])}</span>`;
+                i += dateMatch[0].length;
+                continue;
+            }
+            
+            // Time HH:MM:SS
+            const timeMatch = rest.match(/^-?\d{1,2}:\d{2}:\d{2}(?:\.\d+)?/);
+            if (timeMatch) {
+                result += `<span class="syn-constant">${this.escapeHtml(timeMatch[0])}</span>`;
+                i += timeMatch[0].length;
+                continue;
+            }
+            
+            // Null literals 0N...
+            const nullMatch = rest.match(/^0N[0hiditplgsfp]/);
+            if (nullMatch) {
+                result += `<span class="syn-constant">${this.escapeHtml(nullMatch[0])}</span>`;
+                i += nullMatch[0].length;
+                continue;
+            }
+            
+            // Infinity/NaN
+            const infMatch = rest.match(/^-?0[wWnN]/);
+            if (infMatch) {
+                result += `<span class="syn-constant">${this.escapeHtml(infMatch[0])}</span>`;
+                i += infMatch[0].length;
+                continue;
+            }
+            
+            // Hex number
+            const hexMatch = rest.match(/^0x[0-9a-fA-F]+/);
+            if (hexMatch) {
+                result += `<span class="syn-number">${this.escapeHtml(hexMatch[0])}</span>`;
+                i += hexMatch[0].length;
+                continue;
+            }
+            
+            // Float number
+            const floatMatch = rest.match(/^-?\d+\.\d+(?:[eE][+-]?\d+)?[fF]?/);
+            if (floatMatch) {
+                result += `<span class="syn-number">${this.escapeHtml(floatMatch[0])}</span>`;
+                i += floatMatch[0].length;
+                continue;
+            }
+            
+            // Integer number
+            const intMatch = rest.match(/^-?\d+[iIjJhHbBlL]?/);
+            if (intMatch && (i === 0 || !/[a-zA-Z_]/.test(code[i-1]))) {
+                result += `<span class="syn-number">${this.escapeHtml(intMatch[0])}</span>`;
+                i += intMatch[0].length;
+                continue;
+            }
+            
+            // Identifier or keyword
+            const idMatch = rest.match(/^[a-zA-Z_][a-zA-Z0-9_\-?!]*/);
+            if (idMatch) {
+                const word = idMatch[0];
+                let cls = '';
+                if (KEYWORDS.has(word)) cls = 'syn-keyword';
+                else if (QUERY_KW.has(word)) cls = 'syn-keyword';
+                else if (CORE_FNS.has(word)) cls = 'syn-core-fn';
+                else if (TYPES.has(word)) cls = 'syn-type';
+                else if (CONSTANTS.has(word)) cls = 'syn-constant';
+                else if (SPECIAL_VARS.has(word)) cls = 'syn-special-var';
+                else cls = 'syn-function';
+                
+                result += `<span class="${cls}">${this.escapeHtml(word)}</span>`;
+                i += word.length;
+                continue;
+            }
+            
+            // Parentheses
+            if (ch === '(' || ch === ')') {
+                result += `<span class="syn-paren">${this.escapeHtml(ch)}</span>`;
+                i++;
+                continue;
+            }
+            
+            // Brackets
+            if (ch === '[' || ch === ']') {
+                result += `<span class="syn-bracket">${this.escapeHtml(ch)}</span>`;
+                i++;
+                continue;
+            }
+            
+            // Braces
+            if (ch === '{' || ch === '}') {
+                result += `<span class="syn-brace">${this.escapeHtml(ch)}</span>`;
+                i++;
+                continue;
+            }
+            
+            // Operators
+            if ('+-*/%&|^~<>!=@#$_.?'.includes(ch)) {
+                result += `<span class="syn-operator">${this.escapeHtml(ch)}</span>`;
+                i++;
+                continue;
+            }
+            
+            // Default
+            result += this.escapeHtml(ch);
+            i++;
+        }
+        
+        return result;
     }
 
     public dispose(): void {

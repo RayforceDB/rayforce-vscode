@@ -5,13 +5,26 @@
   "patterns": [
     { "include": "#comment" },
     { "include": "#string" },
-    { "include": "#symbol" },
-    { "include": "#keyword" },
+    { "include": "#quoted-symbol" },
+    { "include": "#keyword-symbol" },
+    { "include": "#null-literal" },
+    { "include": "#infinity-nan" },
+    { "include": "#guid-literal" },
+    { "include": "#timestamp-literal" },
+    { "include": "#date-literal" },
+    { "include": "#time-literal" },
+    { "include": "#hex-number" },
+    { "include": "#float-number" },
+    { "include": "#integer-number" },
+    { "include": "#char-literal" },
+    { "include": "#type-cast" },
     { "include": "#special-form" },
+    { "include": "#query-keyword" },
     { "include": "#core-function" },
+    { "include": "#builtin-constant" },
+    { "include": "#special-variable" },
     { "include": "#function-call" },
-    { "include": "#constant" },
-    { "include": "#number" },
+    { "include": "#symbol-reference" },
     { "include": "#operator" },
     { "include": "#punctuation" }
   ],
@@ -20,7 +33,7 @@
       "patterns": [
         {
           "name": "comment.line.semicolon.rayforce",
-          "match": ";;.*$"
+          "match": ";.*$"
         }
       ]
     },
@@ -28,102 +41,257 @@
       "name": "string.quoted.double.rayforce",
       "begin": "\"",
       "end": "\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.rayforce" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.rayforce" }
+      },
       "patterns": [
         {
           "name": "constant.character.escape.rayforce",
-          "match": "\\\\."
+          "match": "\\\\(?:[nrt\\\\\"']|[0-7]{3})"
+        },
+        {
+          "name": "constant.other.placeholder.rayforce",
+          "match": "%"
         }
       ]
     },
-    "symbol": {
+    "quoted-symbol": {
       "patterns": [
         {
-          "name": "constant.other.symbol.rayforce",
-          "match": "`[a-zA-Z_][a-zA-Z0-9_\\-]*"
-        },
+          "name": "constant.other.symbol.quoted.rayforce",
+          "match": "'[a-zA-Z_][a-zA-Z0-9_\\-?!.]*"
+        }
+      ]
+    },
+    "keyword-symbol": {
+      "patterns": [
         {
           "name": "constant.other.keyword.rayforce",
           "match": ":[a-zA-Z_][a-zA-Z0-9_\\-?!]*"
         }
       ]
     },
-    "keyword": {
+    "null-literal": {
       "patterns": [
         {
-          "name": "keyword.control.rayforce",
-          "match": "(?<=\\()\\s*(fn|do|let|if|set|try|return|exit|raise|quote|and|or)(?=\\s|\\))"
+          "name": "constant.language.null.rayforce",
+          "match": "\\b0N[0hditplgsfp]\\b|\\b::?\\b|\\bnil\\b"
+        }
+      ]
+    },
+    "infinity-nan": {
+      "patterns": [
+        {
+          "name": "constant.language.infinity.rayforce",
+          "match": "-?0[wW]"
+        },
+        {
+          "name": "constant.language.nan.rayforce",
+          "match": "\\b0[nN]\\b"
+        }
+      ]
+    },
+    "guid-literal": {
+      "name": "constant.other.guid.rayforce",
+      "match": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    },
+    "timestamp-literal": {
+      "name": "constant.other.timestamp.rayforce",
+      "match": "\\d{4}\\.\\d{2}\\.\\d{2}[DT]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
+    },
+    "date-literal": {
+      "name": "constant.other.date.rayforce",
+      "match": "\\d{4}\\.\\d{2}\\.\\d{2}(?![DT])"
+    },
+    "time-literal": {
+      "name": "constant.other.time.rayforce",
+      "match": "-?\\d{1,2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
+    },
+    "hex-number": {
+      "name": "constant.numeric.hex.rayforce",
+      "match": "0x[0-9a-fA-F]+"
+    },
+    "float-number": {
+      "name": "constant.numeric.float.rayforce",
+      "match": "-?\\d+\\.\\d+(?:[eE][+-]?\\d+)?[fF]?"
+    },
+    "integer-number": {
+      "name": "constant.numeric.integer.rayforce",
+      "match": "-?\\d+[iIjJhHbBlL]?"
+    },
+    "char-literal": {
+      "name": "constant.character.rayforce",
+      "match": "'(?:\\\\[nrt\\\\'0-7]|[^'])'"
+    },
+    "type-cast": {
+      "patterns": [
+        {
+          "name": "storage.type.rayforce",
+          "match": "\\b(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8|B8|C8|List|Table|Dict|Lambda)\\b"
         }
       ]
     },
     "special-form": {
       "patterns": [
         {
-          "name": "keyword.other.rayforce",
-          "match": "(?<=\\()\\s*(select|update|delete|insert|upsert|by|from|where|take)(?=\\s|\\))"
+          "match": "(?<=\\()\\s*(fn|do|let|if|cond|when|unless|set|try|catch|return|exit|raise|throw|quote|and|or|def|defn|loop|recur)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "keyword.control.rayforce" }
+          }
+        }
+      ]
+    },
+    "query-keyword": {
+      "patterns": [
+        {
+          "match": "(?<=\\()\\s*(select|update|delete|insert|upsert|alter|modify)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "keyword.other.dml.rayforce" }
+          }
+        },
+        {
+          "name": "keyword.other.clause.rayforce",
+          "match": "\\b(from|where|by|take|into|as)(?=\\s*:)"
         }
       ]
     },
     "core-function": {
       "patterns": [
         {
-          "name": "support.function.core.rayforce",
-          "match": "(?<=\\()\\s*(get|read|parse|eval|load|type|til|reverse|distinct|group|sum|avg|med|dev|min|max|round|floor|ceil|first|last|count|not|iasc|idesc|rank|asc|desc|neg|key|value|show|meta|raze|row|write|find|concat|remove|filter|in|within|sect|except|union|rand|as|xasc|xdesc|xrank|enum|xbar|split|bin|binr|env|gc|list|enlist|format|print|println|apply|map|pmap|fold|scan|args|alter|modify|hopen|hclose|timer|sysinfo|memstat|guid|date|time|timestamp|ser|de|unify|diverse|at|timeit|loadfn|system|internals|left-join|inner-join|asof-join|window-join|read-csv|set-splayed|get-splayed|set-parted|get-parted|map-left|map-right|fold-left|fold-right|scan-left|scan-right)(?=\\s|\\))"
+          "comment": "Collection functions",
+          "match": "(?<=\\()\\s*(list|enlist|table|dict|first|last|count|reverse|distinct|raze|concat|remove|filter|take|drop|til|row|key|value|keys|values|flip|get|at|in|within|sect|except|union|find|group|ungroup|enum|xbar|split|bin|binr)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.collection.rayforce" }
+          }
+        },
+        {
+          "comment": "Aggregation functions",
+          "match": "(?<=\\()\\s*(sum|avg|med|dev|var|min|max|count|all|any|prod|wavg|wsum|cov|cor|first|last|sums|prds|mins|maxs|avgs|msum|mcount|mavg|mmin|mmax)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.aggregate.rayforce" }
+          }
+        },
+        {
+          "comment": "Math functions",
+          "match": "(?<=\\()\\s*(abs|neg|floor|ceil|round|sqrt|exp|log|sin|cos|tan|asin|acos|atan|signum|mod|div|reciprocal)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.math.rayforce" }
+          }
+        },
+        {
+          "comment": "Order/Sort functions",
+          "match": "(?<=\\()\\s*(asc|desc|iasc|idesc|rank|xasc|xdesc|xrank|sort)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.order.rayforce" }
+          }
+        },
+        {
+          "comment": "Higher-order functions",
+          "match": "(?<=\\()\\s*(apply|map|pmap|fold|scan|map-left|map-right|fold-left|fold-right|scan-left|scan-right|each|peach|over|converge)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.higher-order.rayforce" }
+          }
+        },
+        {
+          "comment": "Join functions",
+          "match": "(?<=\\()\\s*(left-join|inner-join|asof-join|window-join|lj|ij|aj|wj|uj|pj)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.join.rayforce" }
+          }
+        },
+        {
+          "comment": "IO functions",
+          "match": "(?<=\\()\\s*(read|write|read-csv|write-csv|hopen|hclose|load|save|set-splayed|get-splayed|set-parted|get-parted|system)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.io.rayforce" }
+          }
+        },
+        {
+          "comment": "Type/Meta functions",
+          "match": "(?<=\\()\\s*(type|meta|parse|eval|format|show|print|println|ser|de|resolve|nil\\?|null\\?|empty\\?|atom\\?|list\\?)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.meta.rayforce" }
+          }
+        },
+        {
+          "comment": "Date/Time functions",
+          "match": "(?<=\\()\\s*(date|time|timestamp|guid|year|month|mm|dd|hh|mi|ss|ms)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.datetime.rayforce" }
+          }
+        },
+        {
+          "comment": "String functions",
+          "match": "(?<=\\()\\s*(lower|upper|trim|ltrim|rtrim|like|ss|ssr|vs|sv)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.string.rayforce" }
+          }
+        },
+        {
+          "comment": "Random functions",
+          "match": "(?<=\\()\\s*(rand|deal|roll)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.random.rayforce" }
+          }
+        },
+        {
+          "comment": "System functions",
+          "match": "(?<=\\()\\s*(env|gc|args|timer|sysinfo|memstat|timeit|loadfn|internals)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.system.rayforce" }
+          }
+        },
+        {
+          "comment": "Logic functions",
+          "match": "(?<=\\()\\s*(not|unify|diverse)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "support.function.logic.rayforce" }
+          }
+        }
+      ]
+    },
+    "builtin-constant": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.rayforce",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "special-variable": {
+      "patterns": [
+        {
+          "name": "variable.language.self.rayforce",
+          "match": "\\bself\\b"
+        },
+        {
+          "name": "variable.language.it.rayforce",
+          "match": "\\bit\\b"
+        },
+        {
+          "name": "variable.other.global.rayforce",
+          "match": "\\.[a-zA-Z_][a-zA-Z0-9_\\-?!.]*"
         }
       ]
     },
     "function-call": {
       "patterns": [
         {
-          "name": "entity.name.function.rayforce",
-          "match": "(?<=\\()\\s*[a-zA-Z_][a-zA-Z0-9_\\-?!]*"
+          "match": "(?<=\\()\\s*([a-zA-Z_][a-zA-Z0-9_\\-?!]*)(?=\\s|\\)|$)",
+          "captures": {
+            "1": { "name": "entity.name.function.rayforce" }
+          }
         }
       ]
     },
-    "constant": {
+    "symbol-reference": {
       "patterns": [
         {
-          "name": "constant.language.boolean.rayforce",
-          "match": "\\b(true|false)\\b"
-        },
-        {
-          "name": "constant.language.null.rayforce",
-          "match": "\\b(nil|::)\\b"
-        },
-        {
-          "name": "storage.type.rayforce",
-          "match": "\\b(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8)\\b"
-        },
-        {
-          "name": "constant.other.timestamp.rayforce",
-          "match": "\\d{4}\\.\\d{2}\\.\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
-        },
-        {
-          "name": "constant.other.date.rayforce",
-          "match": "\\d{4}\\.\\d{2}\\.\\d{2}\\b"
-        },
-        {
-          "name": "constant.other.time.rayforce",
-          "match": "\\b\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?\\b"
-        },
-        {
-          "name": "constant.other.guid.rayforce",
-          "match": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-        }
-      ]
-    },
-    "number": {
-      "patterns": [
-        {
-          "name": "constant.numeric.float.rayforce",
-          "match": "-?\\d+\\.\\d+(?:[eE][+-]?\\d+)?[fF]?"
-        },
-        {
-          "name": "constant.numeric.integer.rayforce",
-          "match": "-?\\d+[iIjJhHbB]?"
-        },
-        {
-          "name": "constant.numeric.infinity.rayforce",
-          "match": "-?0[wWnN]"
+          "name": "variable.other.rayforce",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_\\-?!]*\\b"
         }
       ]
     },
@@ -131,7 +299,7 @@
       "patterns": [
         {
           "name": "keyword.operator.comparison.rayforce",
-          "match": "==|!=|<=|>=|<|>"
+          "match": "==|!=|<>|<=|>=|<|>"
         },
         {
           "name": "keyword.operator.arithmetic.rayforce",
@@ -142,8 +310,40 @@
           "match": "[&|!~^]"
         },
         {
-          "name": "keyword.operator.other.rayforce",
-          "match": "[.@#$_?]"
+          "name": "keyword.operator.assignment.rayforce",
+          "match": ":"
+        },
+        {
+          "name": "keyword.operator.dict.rayforce",
+          "match": "!"
+        },
+        {
+          "name": "keyword.operator.apply.rayforce",
+          "match": "@"
+        },
+        {
+          "name": "keyword.operator.compose.rayforce",
+          "match": "\\."
+        },
+        {
+          "name": "keyword.operator.project.rayforce",
+          "match": "#"
+        },
+        {
+          "name": "keyword.operator.question.rayforce",
+          "match": "\\?"
+        },
+        {
+          "name": "keyword.operator.each.rayforce",
+          "match": "'"
+        },
+        {
+          "name": "keyword.operator.underscore.rayforce",
+          "match": "_"
+        },
+        {
+          "name": "keyword.operator.dollar.rayforce",
+          "match": "\\$"
         }
       ]
     },
@@ -181,3 +381,5 @@
     }
   }
 }
+
+
