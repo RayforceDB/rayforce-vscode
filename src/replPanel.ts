@@ -1107,6 +1107,77 @@ export class RayforceReplPanel {
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-secondary);
         }
+
+        /* Autocomplete dropdown */
+        .autocomplete-container {
+            position: relative;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--vscode-editorWidget-background, var(--bg-secondary));
+            border: 1px solid var(--vscode-editorWidget-border, var(--border));
+            border-radius: 4px;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            margin-bottom: 4px;
+        }
+
+        .autocomplete-dropdown.visible {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 6px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: var(--vscode-list-hoverBackground, rgba(128, 128, 128, 0.1));
+        }
+
+        .autocomplete-item.selected {
+            background: var(--vscode-list-activeSelectionBackground, var(--accent));
+            color: var(--vscode-list-activeSelectionForeground, white);
+        }
+
+        .autocomplete-item-name {
+            font-family: var(--vscode-editor-font-family, monospace);
+            font-weight: 500;
+        }
+
+        .autocomplete-item-kind {
+            font-size: 10px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            background: var(--badge-bg);
+            color: var(--badge-fg);
+            text-transform: uppercase;
+        }
+
+        .autocomplete-item-detail {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-left: auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .autocomplete-item.selected .autocomplete-item-detail {
+            color: var(--vscode-list-activeSelectionForeground, rgba(255, 255, 255, 0.7));
+        }
     </style>
 </head>
 <body>
@@ -1141,22 +1212,25 @@ export class RayforceReplPanel {
         </div>
 
         <div class="input-area">
-            <div class="input-wrapper">
-                <span class="input-prompt-char">&gt;</span>
-                <div class="input-container">
-                    <div id="syntax-highlight"></div>
-                    <input 
-                        type="text" 
-                        id="command-input" 
-                        placeholder="${isConnected ? 'Enter Rayfall expression...' : 'Not connected'}"
-                        ${isConnected ? '' : 'disabled'}
-                        autocomplete="off"
-                        spellcheck="false"
-                    />
+            <div class="autocomplete-container">
+                <div class="autocomplete-dropdown" id="autocomplete-dropdown"></div>
+                <div class="input-wrapper">
+                    <span class="input-prompt-char">&gt;</span>
+                    <div class="input-container">
+                        <div id="syntax-highlight"></div>
+                        <input 
+                            type="text" 
+                            id="command-input" 
+                            placeholder="${isConnected ? 'Enter Rayfall expression...' : 'Not connected'}"
+                            ${isConnected ? '' : 'disabled'}
+                            autocomplete="off"
+                            spellcheck="false"
+                        />
+                    </div>
+                    <button class="submit-btn" onclick="executeCommand()" ${isConnected ? '' : 'disabled'}>
+                        Run
+                    </button>
                 </div>
-                <button class="submit-btn" onclick="executeCommand()" ${isConnected ? '' : 'disabled'}>
-                    Run
-                </button>
             </div>
         </div>
     </div>
@@ -1189,10 +1263,179 @@ export class RayforceReplPanel {
         const input = document.getElementById('command-input');
         const history = document.getElementById('history');
         const syntaxHighlight = document.getElementById('syntax-highlight');
+        const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
         
         const state = vscode.getState() || { commandHistory: [], historyIndex: -1, inputValue: '' };
         let commandHistory = state.commandHistory;
         let historyIndex = state.historyIndex;
+        
+        // Autocomplete data
+        const AUTOCOMPLETE_DATA = [
+            // Keywords
+            { name: 'fn', kind: 'keyword', detail: 'Define anonymous function' },
+            { name: 'do', kind: 'keyword', detail: 'Execute multiple expressions' },
+            { name: 'set', kind: 'keyword', detail: 'Bind value to symbol' },
+            { name: 'let', kind: 'keyword', detail: 'Local binding' },
+            { name: 'if', kind: 'keyword', detail: 'Conditional expression' },
+            { name: 'and', kind: 'keyword', detail: 'Logical AND' },
+            { name: 'or', kind: 'keyword', detail: 'Logical OR' },
+            { name: 'try', kind: 'keyword', detail: 'Try-catch expression' },
+            { name: 'quote', kind: 'keyword', detail: 'Quote expression' },
+            { name: 'self', kind: 'keyword', detail: 'Self-reference in recursive fn' },
+            { name: 'timeit', kind: 'keyword', detail: 'Measure execution time' },
+            // Unary functions
+            { name: 'get', kind: 'fn', detail: 'Get value' },
+            { name: 'raise', kind: 'fn', detail: 'Raise an error' },
+            { name: 'read', kind: 'fn', detail: 'Read from file' },
+            { name: 'parse', kind: 'fn', detail: 'Parse string' },
+            { name: 'eval', kind: 'fn', detail: 'Evaluate expression' },
+            { name: 'load', kind: 'fn', detail: 'Load file' },
+            { name: 'type', kind: 'fn', detail: 'Get type' },
+            { name: 'til', kind: 'fn', detail: 'Range 0..n-1' },
+            { name: 'reverse', kind: 'fn', detail: 'Reverse list' },
+            { name: 'distinct', kind: 'fn', detail: 'Unique values' },
+            { name: 'group', kind: 'fn', detail: 'Group by values' },
+            { name: 'sum', kind: 'fn', detail: 'Sum values' },
+            { name: 'avg', kind: 'fn', detail: 'Average' },
+            { name: 'med', kind: 'fn', detail: 'Median' },
+            { name: 'dev', kind: 'fn', detail: 'Std deviation' },
+            { name: 'min', kind: 'fn', detail: 'Minimum' },
+            { name: 'max', kind: 'fn', detail: 'Maximum' },
+            { name: 'round', kind: 'fn', detail: 'Round number' },
+            { name: 'floor', kind: 'fn', detail: 'Round down' },
+            { name: 'ceil', kind: 'fn', detail: 'Round up' },
+            { name: 'first', kind: 'fn', detail: 'First element' },
+            { name: 'last', kind: 'fn', detail: 'Last element' },
+            { name: 'count', kind: 'fn', detail: 'Count elements' },
+            { name: 'not', kind: 'fn', detail: 'Logical NOT' },
+            { name: 'iasc', kind: 'fn', detail: 'Indices ascending' },
+            { name: 'idesc', kind: 'fn', detail: 'Indices descending' },
+            { name: 'rank', kind: 'fn', detail: 'Rank values' },
+            { name: 'asc', kind: 'fn', detail: 'Sort ascending' },
+            { name: 'desc', kind: 'fn', detail: 'Sort descending' },
+            { name: 'guid', kind: 'fn', detail: 'Generate GUID' },
+            { name: 'neg', kind: 'fn', detail: 'Negate' },
+            { name: 'where', kind: 'fn', detail: 'Indices where true' },
+            { name: 'key', kind: 'fn', detail: 'Get keys' },
+            { name: 'value', kind: 'fn', detail: 'Get values' },
+            { name: 'ser', kind: 'fn', detail: 'Serialize' },
+            { name: 'de', kind: 'fn', detail: 'Deserialize' },
+            { name: 'hclose', kind: 'fn', detail: 'Close handle' },
+            { name: 'select', kind: 'fn', detail: 'Query table' },
+            { name: 'update', kind: 'fn', detail: 'Update table' },
+            { name: 'date', kind: 'fn', detail: 'Convert to date' },
+            { name: 'time', kind: 'fn', detail: 'Convert to time' },
+            { name: 'timestamp', kind: 'fn', detail: 'Convert to timestamp' },
+            { name: 'nil?', kind: 'fn', detail: 'Check if null' },
+            { name: 'resolve', kind: 'fn', detail: 'Resolve symbol' },
+            { name: 'show', kind: 'fn', detail: 'Display value' },
+            { name: 'meta', kind: 'fn', detail: 'Get metadata' },
+            { name: 'system', kind: 'fn', detail: 'System command' },
+            { name: 'raze', kind: 'fn', detail: 'Flatten list' },
+            { name: 'unify', kind: 'fn', detail: 'Unify types' },
+            { name: 'diverse', kind: 'fn', detail: 'Check diverse' },
+            { name: 'row', kind: 'fn', detail: 'Get table row' },
+            // Binary functions
+            { name: 'write', kind: 'fn', detail: 'Write to file' },
+            { name: 'at', kind: 'fn', detail: 'Index into' },
+            { name: 'div', kind: 'fn', detail: 'Integer division' },
+            { name: 'like', kind: 'fn', detail: 'Pattern match' },
+            { name: 'dict', kind: 'fn', detail: 'Create dictionary' },
+            { name: 'table', kind: 'fn', detail: 'Create table' },
+            { name: 'find', kind: 'fn', detail: 'Find index' },
+            { name: 'concat', kind: 'fn', detail: 'Concatenate' },
+            { name: 'remove', kind: 'fn', detail: 'Remove elements' },
+            { name: 'filter', kind: 'fn', detail: 'Filter collection' },
+            { name: 'take', kind: 'fn', detail: 'Take n elements' },
+            { name: 'in', kind: 'fn', detail: 'Membership test' },
+            { name: 'within', kind: 'fn', detail: 'Range test' },
+            { name: 'sect', kind: 'fn', detail: 'Intersection' },
+            { name: 'except', kind: 'fn', detail: 'Set difference' },
+            { name: 'union', kind: 'fn', detail: 'Set union' },
+            { name: 'rand', kind: 'fn', detail: 'Random values' },
+            { name: 'as', kind: 'fn', detail: 'Cast to type' },
+            { name: 'xasc', kind: 'fn', detail: 'Sort table asc' },
+            { name: 'xdesc', kind: 'fn', detail: 'Sort table desc' },
+            { name: 'xrank', kind: 'fn', detail: 'Rank groups' },
+            { name: 'enum', kind: 'fn', detail: 'Create enum' },
+            { name: 'xbar', kind: 'fn', detail: 'Bar/bucket' },
+            { name: 'split', kind: 'fn', detail: 'Split string' },
+            { name: 'bin', kind: 'fn', detail: 'Binary search' },
+            { name: 'binr', kind: 'fn', detail: 'Binary search right' },
+            // Variadic functions
+            { name: 'env', kind: 'fn', detail: 'Get environment' },
+            { name: 'memstat', kind: 'fn', detail: 'Memory stats' },
+            { name: 'gc', kind: 'fn', detail: 'Garbage collect' },
+            { name: 'list', kind: 'fn', detail: 'Create list' },
+            { name: 'enlist', kind: 'fn', detail: 'Enlist value' },
+            { name: 'format', kind: 'fn', detail: 'Format string' },
+            { name: 'print', kind: 'fn', detail: 'Print' },
+            { name: 'println', kind: 'fn', detail: 'Print line' },
+            { name: 'apply', kind: 'fn', detail: 'Apply function' },
+            { name: 'map', kind: 'fn', detail: 'Map over collection' },
+            { name: 'pmap', kind: 'fn', detail: 'Parallel map' },
+            { name: 'map-left', kind: 'fn', detail: 'Map fixed left' },
+            { name: 'map-right', kind: 'fn', detail: 'Map fixed right' },
+            { name: 'fold', kind: 'fn', detail: 'Reduce/fold' },
+            { name: 'fold-left', kind: 'fn', detail: 'Left fold' },
+            { name: 'fold-right', kind: 'fn', detail: 'Right fold' },
+            { name: 'scan', kind: 'fn', detail: 'Running fold' },
+            { name: 'scan-left', kind: 'fn', detail: 'Left scan' },
+            { name: 'scan-right', kind: 'fn', detail: 'Right scan' },
+            { name: 'args', kind: 'fn', detail: 'CLI arguments' },
+            { name: 'alter', kind: 'fn', detail: 'Alter in-place' },
+            { name: 'modify', kind: 'fn', detail: 'Modify value' },
+            { name: 'insert', kind: 'fn', detail: 'Insert row' },
+            { name: 'upsert', kind: 'fn', detail: 'Upsert row' },
+            { name: 'read-csv', kind: 'fn', detail: 'Read CSV' },
+            { name: 'write-csv', kind: 'fn', detail: 'Write CSV' },
+            { name: 'left-join', kind: 'fn', detail: 'Left join' },
+            { name: 'inner-join', kind: 'fn', detail: 'Inner join' },
+            { name: 'asof-join', kind: 'fn', detail: 'As-of join' },
+            { name: 'window-join', kind: 'fn', detail: 'Window join' },
+            { name: 'return', kind: 'fn', detail: 'Return value' },
+            { name: 'hopen', kind: 'fn', detail: 'Open handle' },
+            { name: 'exit', kind: 'fn', detail: 'Exit runtime' },
+            { name: 'loadfn', kind: 'fn', detail: 'Load function' },
+            { name: 'timer', kind: 'fn', detail: 'Set timer' },
+            { name: 'set-splayed', kind: 'fn', detail: 'Save splayed' },
+            { name: 'get-splayed', kind: 'fn', detail: 'Load splayed' },
+            { name: 'set-parted', kind: 'fn', detail: 'Save partitioned' },
+            { name: 'get-parted', kind: 'fn', detail: 'Load partitioned' },
+            { name: 'internals', kind: 'fn', detail: 'Internal values' },
+            { name: 'sysinfo', kind: 'fn', detail: 'System info' },
+            // Types
+            { name: 'B8', kind: 'type', detail: 'Boolean' },
+            { name: 'U8', kind: 'type', detail: 'Unsigned 8-bit' },
+            { name: 'I16', kind: 'type', detail: '16-bit integer' },
+            { name: 'I32', kind: 'type', detail: '32-bit integer' },
+            { name: 'I64', kind: 'type', detail: '64-bit integer' },
+            { name: 'F64', kind: 'type', detail: '64-bit float' },
+            { name: 'C8', kind: 'type', detail: 'Character' },
+            { name: 'SYMBOL', kind: 'type', detail: 'Symbol' },
+            { name: 'DATE', kind: 'type', detail: 'Date' },
+            { name: 'TIME', kind: 'type', detail: 'Time' },
+            { name: 'TIMESTAMP', kind: 'type', detail: 'Timestamp' },
+            { name: 'GUID', kind: 'type', detail: 'GUID' },
+            { name: 'LIST', kind: 'type', detail: 'List' },
+            { name: 'TABLE', kind: 'type', detail: 'Table' },
+            { name: 'DICT', kind: 'type', detail: 'Dictionary' },
+            // Query keywords
+            { name: 'from:', kind: 'keyword', detail: 'Source table' },
+            { name: 'where:', kind: 'keyword', detail: 'Filter condition' },
+            { name: 'by:', kind: 'keyword', detail: 'Group by' },
+            { name: 'take:', kind: 'keyword', detail: 'Limit rows' },
+            // Constants
+            { name: 'nil', kind: 'const', detail: 'Null value' },
+            { name: 'true', kind: 'const', detail: 'Boolean true' },
+            { name: 'false', kind: 'const', detail: 'Boolean false' },
+        ];
+
+        let autocompleteVisible = false;
+        let autocompleteItems = [];
+        let autocompleteSelectedIndex = 0;
+        let currentPrefix = '';
+        let prefixStart = 0;
         
         if (input && state.inputValue) {
             input.value = state.inputValue;
@@ -1403,8 +1646,120 @@ export class RayforceReplPanel {
             }
         }
 
+        // Autocomplete functions
+        function getWordAtCursor() {
+            if (!input) return { word: '', start: 0 };
+            const text = input.value;
+            const cursor = input.selectionStart || 0;
+            
+            // Find word boundaries (allow - and ? in identifiers)
+            let start = cursor;
+            while (start > 0 && /[a-zA-Z0-9_\\-?!]/.test(text[start - 1])) {
+                start--;
+            }
+            
+            const word = text.slice(start, cursor);
+            return { word, start };
+        }
+
+        function filterAutocomplete(prefix) {
+            if (!prefix || prefix.length < 1) return [];
+            
+            const lowerPrefix = prefix.toLowerCase();
+            return AUTOCOMPLETE_DATA
+                .filter(item => item.name.toLowerCase().startsWith(lowerPrefix))
+                .slice(0, 15); // Limit to 15 suggestions
+        }
+
+        function renderAutocomplete() {
+            if (!autocompleteDropdown) return;
+            
+            if (autocompleteItems.length === 0) {
+                autocompleteDropdown.classList.remove('visible');
+                autocompleteVisible = false;
+                return;
+            }
+
+            autocompleteDropdown.innerHTML = autocompleteItems.map((item, idx) => {
+                const selected = idx === autocompleteSelectedIndex ? 'selected' : '';
+                return '<div class="autocomplete-item ' + selected + '" data-index="' + idx + '">' +
+                    '<span class="autocomplete-item-name">' + escapeHtml(item.name) + '</span>' +
+                    '<span class="autocomplete-item-kind">' + item.kind + '</span>' +
+                    '<span class="autocomplete-item-detail">' + escapeHtml(item.detail) + '</span>' +
+                '</div>';
+            }).join('');
+
+            autocompleteDropdown.classList.add('visible');
+            autocompleteVisible = true;
+
+            // Scroll selected item into view
+            const selectedEl = autocompleteDropdown.querySelector('.autocomplete-item.selected');
+            if (selectedEl) {
+                selectedEl.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function updateAutocomplete() {
+            const { word, start } = getWordAtCursor();
+            currentPrefix = word;
+            prefixStart = start;
+            
+            autocompleteItems = filterAutocomplete(word);
+            autocompleteSelectedIndex = 0;
+            renderAutocomplete();
+        }
+
+        function hideAutocomplete() {
+            if (autocompleteDropdown) {
+                autocompleteDropdown.classList.remove('visible');
+            }
+            autocompleteVisible = false;
+            autocompleteItems = [];
+        }
+
+        function applyAutocomplete(index) {
+            if (!input || index < 0 || index >= autocompleteItems.length) return;
+            
+            const item = autocompleteItems[index];
+            const text = input.value;
+            const newText = text.slice(0, prefixStart) + item.name + text.slice(input.selectionStart || prefixStart);
+            
+            input.value = newText;
+            const newCursor = prefixStart + item.name.length;
+            input.setSelectionRange(newCursor, newCursor);
+            
+            hideAutocomplete();
+            updateHighlight();
+            saveState();
+        }
+
         if (input) {
             input.addEventListener('keydown', (e) => {
+                // Handle autocomplete navigation
+                if (autocompleteVisible) {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        autocompleteSelectedIndex = Math.min(autocompleteSelectedIndex + 1, autocompleteItems.length - 1);
+                        renderAutocomplete();
+                        return;
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        autocompleteSelectedIndex = Math.max(autocompleteSelectedIndex - 1, 0);
+                        renderAutocomplete();
+                        return;
+                    } else if (e.key === 'Tab' || e.key === 'Enter') {
+                        if (autocompleteItems.length > 0) {
+                            e.preventDefault();
+                            applyAutocomplete(autocompleteSelectedIndex);
+                            return;
+                        }
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        hideAutocomplete();
+                        return;
+                    }
+                }
+                
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     executeCommand();
@@ -1414,12 +1769,31 @@ export class RayforceReplPanel {
                 } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
                     navigateHistory(1);
+                } else if (e.key === 'Escape') {
+                    hideAutocomplete();
                 }
             });
 
             input.addEventListener('input', () => {
                 updateHighlight();
+                updateAutocomplete();
                 saveState();
+            });
+
+            // Handle click on autocomplete items
+            if (autocompleteDropdown) {
+                autocompleteDropdown.addEventListener('click', (e) => {
+                    const item = e.target.closest('.autocomplete-item');
+                    if (item) {
+                        const index = parseInt(item.dataset.index, 10);
+                        applyAutocomplete(index);
+                    }
+                });
+            }
+
+            // Hide autocomplete on blur (with small delay to allow click)
+            input.addEventListener('blur', () => {
+                setTimeout(hideAutocomplete, 150);
             });
         }
 

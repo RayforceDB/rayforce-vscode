@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { RayforceInstancesProvider, RayforceInstanceItem, RemoteInstanceItem, RayforceProcess, InstanceItem } from './instancesProvider';
 import { RayforceReplPanel } from './replPanel';
 import { ProcessInfoProvider } from './processInfoProvider';
+import { RayforceCompletionProvider } from './completionProvider';
 
 let instancesProvider: RayforceInstancesProvider;
 let processInfoProvider: ProcessInfoProvider;
@@ -173,6 +174,13 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     );
 
+    // Register completion provider for Rayforce files
+    const completionProvider = vscode.languages.registerCompletionItemProvider(
+        { language: 'rayforce' },
+        new RayforceCompletionProvider(),
+        '(', "'", ' '  // Trigger on (, ', and space
+    );
+
     context.subscriptions.push(
         treeView,
         processInfoView,
@@ -183,7 +191,8 @@ export async function activate(context: vscode.ExtensionContext) {
         removeRemoteCommand,
         disconnectCommand,
         openReplCommand,
-        executeSelectionCommand
+        executeSelectionCommand,
+        completionProvider
     );
 
     const refreshInterval = setInterval(() => {

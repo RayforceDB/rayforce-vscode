@@ -168,7 +168,7 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
 
     async getAvailableInstances(): Promise<{ label: string; host: string; port: number; isRemote: boolean }[]> {
         const instances: { label: string; host: string; port: number; isRemote: boolean }[] = [];
-        
+
         const processes = await this.findRayforceProcesses();
         for (const proc of processes.sort((a, b) => a.port - b.port)) {
             instances.push({
@@ -219,12 +219,12 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
 
                 const processes: RayforceProcess[] = [];
                 for (const line of stdout.split('\n')) {
-                    const parts = line.trim().split(/\s+/);
+                        const parts = line.trim().split(/\s+/);
                     if (parts.length < 11) {
                         continue;
                     }
 
-                    const pid = parseInt(parts[1]);
+                            const pid = parseInt(parts[1]);
                     if (isNaN(pid)) {
                         continue;
                     }
@@ -232,7 +232,7 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
                     const cpu = parseFloat(parts[2]) || 0;
                     const memory = parseFloat(parts[3]) || 0;
 
-                    const commandParts = parts.slice(10);
+                                const commandParts = parts.slice(10);
                     const fullCommand = commandParts[0] || '';
                     const executableName = path.basename(fullCommand).toLowerCase();
                     
@@ -240,9 +240,9 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
                         continue;
                     }
 
-                    const args = commandParts.slice(1).join(' ');
+                                const args = commandParts.slice(1).join(' ');
                     
-                    const portMatch = args.match(/(?:-p|--port)\s+(\d+)/);
+                                const portMatch = args.match(/(?:-p|--port)\s+(\d+)/);
                     if (!portMatch) {
                         continue;
                     }
@@ -271,7 +271,7 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
             return { success: true, process: item.process, host: 'localhost', port: item.process.port };
         }
 
-        this.disconnectFromInstance();
+            this.disconnectFromInstance();
 
         this.connectedPid = item.process.pid;
         this.connectedPort = item.process.port;
@@ -345,7 +345,7 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
 
     isConnectedRemote(): boolean {
         return this.isRemoteConnection;
-    }
+        }
 
     async terminateConnectedProcess(): Promise<boolean> {
         console.log('[Instances] terminateConnectedProcess called, PID:', this.connectedPid, 'isRemote:', this.isRemoteConnection);
