@@ -2,7 +2,7 @@
   "name": "rayforce-vscode",
   "displayName": "RayforceDB",
   "description": "Runtime Manager for RayforceDB",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "publisher": "RayforceDB",
   "icon": "assets/logo.png",
   "repository": {
