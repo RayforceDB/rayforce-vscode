@@ -262,23 +262,26 @@
         }
 
         .hero-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            max-width: 520px;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
-            padding: 0.8rem 1.8rem;
+            padding: 0.75rem 1.25rem;
             border-radius: 50px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 500;
             text-decoration: none;
             transition: all 0.3s ease;
             cursor: pointer;
             border: 2px solid transparent;
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -366,9 +369,24 @@
         }
 
         .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .features-grid .feature-card {
+            flex: 0 1 320px;
+            max-width: 350px;
+        }
+
+        @media (max-width: 640px) {
+            .features-grid .feature-card {
+                flex: 1 1 100%;
+                max-width: none;
+            }
         }
 
         .feature-card {
@@ -508,6 +526,13 @@
             margin-top: 3rem;
         }
 
+        .syntax-demo-single {
+            margin-top: 3rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .syntax-card {
             background: var(--bg-white);
             border-radius: 12px;
@@ -638,10 +663,6 @@
                 margin-right: auto;
             }
 
-            .hero-buttons {
-                justify-content: center;
-            }
-
             .hero-socials {
                 justify-content: center;
             }
@@ -676,6 +697,12 @@
 
             .hero-logo {
                 max-width: 240px;
+            }
+
+            .hero-buttons {
+                grid-template-columns: 1fr;
+                max-width: 280px;
+                margin: 0 auto;
             }
 
             .section-header h2,
@@ -808,6 +835,9 @@
                 <a href="#features">Features</a>
                 <a href="#installation">Install</a>
                 <a href="#syntax">Syntax</a>
+                <a href="https://open-vsx.org/extension/RayforceDB/rayforce-vscode" target="_blank">
+                    <i class="fas fa-cube"></i> OpenVSX
+                </a>
                 <a href="https://github.com/RayforceDB/rayforce-vscode" class="github-link" target="_blank">
                     <i class="fab fa-github"></i> GitHub
                 </a>
@@ -826,7 +856,7 @@
                 <img src="images/logo_dark_full.svg" alt="RayforceDB" class="hero-logo light-only">
                 <img src="images/logo_light_full.svg" alt="RayforceDB" class="hero-logo dark-only">
                 <h1>VS Code <strong>Extension</strong></h1>
-                <p>Connect to running instances, monitor CPU and memory, send commands via interactive REPL, and enjoy
+                <p>Connect to local and remote instances, monitor CPU and RAM, send queries via interactive REPL, and enjoy
                     full syntax highlighting for Rayfall code.</p>
                 <div class="hero-socials">
                     <a href="https://github.com/singaraiona" target="_blank" title="GitHub"><i
@@ -843,6 +873,10 @@
                         class="btn btn-primary" target="_blank">
                         <i class="fas fa-download"></i> Install Extension
                     </a>
+                    <a href="https://open-vsx.org/extension/RayforceDB/rayforce-vscode"
+                        class="btn btn-secondary" target="_blank">
+                        <i class="fas fa-cube"></i> OpenVSX Registry
+                    </a>
                     <a href="https://github.com/RayforceDB/rayforce-vscode" class="btn btn-secondary" target="_blank">
                         <i class="fab fa-github"></i> View Source
                     </a>
@@ -850,7 +884,7 @@
             </div>
             <div class="hero-image">
                 <img src="images/demo.png" alt="RayforceDB VS Code Extension Demo">
-                <span class="hero-badge"><i class="fas fa-bolt"></i> v0.1.0</span>
+                <span class="hero-badge"><i class="fas fa-bolt"></i> v0.2.0</span>
             </div>
         </div>
     </section>
@@ -884,8 +918,7 @@
                         <i class="fas fa-terminal"></i>
                     </div>
                     <h3>Interactive REPL</h3>
-                    <p>Send commands directly to connected instances via an integrated REPL panel. Execute selections
-                        with Ctrl+Enter.</p>
+                    <p>Send selected commands directly from opened file to connected instances via an integrated REPL panel.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -900,15 +933,7 @@
                         <i class="fas fa-eye"></i>
                     </div>
                     <h3>Environment Inspector</h3>
-                    <p>Introspect environment variables and see what's defined in your connected RayforceDB instance.
-                    </p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-plug"></i>
-                    </div>
-                    <h3>Remote Connections</h3>
-                    <p>Connect to remote RayforceDB instances. Add, remove, and manage remote hosts with ease.</p>
+                    <p>Introspect environment variables and see what's defined in your connected RayforceDB instance.</p>
                 </div>
             </div>
         </div>
@@ -918,15 +943,21 @@
     <section class="installation" id="installation">
         <div class="installation-inner">
             <h2>Get started in <strong>seconds</strong></h2>
-            <p>Install the extension and connect to your first RayforceDB instance.</p>
             <div class="install-methods">
                 <div class="install-method">
                     <h3><i class="fas fa-store"></i> VS Code Marketplace</h3>
-                    <p>The easiest way to install. Search for "Rayforce" in the VS Code extensions panel or click the
-                        button below.</p>
+                    <p>The easiest way to install. Search for "Rayforce" in the VS Code extensions panel or click the button below.</p>
                     <a href="https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode"
                         class="btn btn-primary" target="_blank" style="margin-top: 0.5rem;">
                         <i class="fas fa-external-link-alt"></i> Open Marketplace
+                    </a>
+                </div>
+                <div class="install-method">
+                    <h3><i class="fas fa-cube"></i> OpenVSX Registry</h3>
+                    <p>For VSCodium, Theia, Gitpod, and other open-source editors compatible with OpenVSX.</p>
+                    <a href="https://open-vsx.org/extension/RayforceDB/rayforce-vscode"
+                        class="btn btn-primary" target="_blank" style="margin-top: 0.5rem;">
+                        <i class="fas fa-external-link-alt"></i> Open Registry
                     </a>
                 </div>
                 <div class="install-method">
@@ -954,10 +985,10 @@
                 <h2>Beautiful <strong>syntax highlighting</strong></h2>
                 <p>Write Rayfall code with full language support for .rfl and .rf files.</p>
             </div>
-            <div class="syntax-demo">
+            <div class="syntax-demo-single">
                 <div class="syntax-card">
                     <div class="syntax-card-header">
-                        <i class="fas fa-file-code"></i> example.rf
+                        <i class="fas fa-file-code"></i> example.rfl
                     </div>
                     <pre><span class="comment">; Create a table</span>
 (<span class="keyword">set</span> employees (<span class="func">table</span> [name dept salary]
@@ -971,29 +1002,14 @@
   name: name
   salary: salary
   from: employees
-  where: (<span class="func">></span> salary <span class="number">70000</span>)})</pre>
-                </div>
-                <div class="syntax-card">
-                    <div class="syntax-card-header">
-                        <i class="fas fa-file-code"></i> queries.rfl
-                    </div>
-                    <pre><span class="comment">; Join two tables</span>
-(<span class="keyword">set</span> result
-  (<span class="func">left-join</span> [order_id]
-    trades orders))
+  where: (<span class="func">></span> salary <span class="number">70000</span>)})
 
 <span class="comment">; Aggregate by department</span>
 (<span class="keyword">select</span> {
   avg_salary: (<span class="func">avg</span> salary)
   headcount: (<span class="func">count</span> name)
   from: employees
-  by: dept})
-
-<span class="comment">; Update salaries</span>
-(<span class="func">update</span> {
-  salary: (<span class="func">*</span> salary <span class="number">1.1</span>)
-  from: employees
-  where: (<span class="func">=</span> dept <span class="symbol">'IT</span>)})</pre>
+  by: dept})</pre>
                 </div>
             </div>
         </div>
@@ -1010,7 +1026,9 @@
                 <a href="https://rayforcedb.com" target="_blank">Documentation</a>
                 <a href="https://github.com/RayforceDB/rayforce-vscode" target="_blank">GitHub</a>
                 <a href="https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode"
-                    target="_blank">Marketplace</a>
+                    target="_blank">VS Code Marketplace</a>
+                <a href="https://open-vsx.org/extension/RayforceDB/rayforce-vscode"
+                    target="_blank">OpenVSX Registry</a>
             </div>
             <div class="footer-social">
                 <a href="https://github.com/singaraiona" target="_blank" title="GitHub">
