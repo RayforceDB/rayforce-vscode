@@ -4,8 +4,8 @@
    viewBox="800 1100 1395.0082 1535.1837"
    style="clip-rule:evenodd;fill-rule:evenodd;image-rendering:optimizeQuality;shape-rendering:geometricPrecision;text-rendering:geometricPrecision"
    id="svg193"
-   sodipodi:docname="logo_dark.svg"
-   inkscape:version="1.4.2 (ebf0e94, 2025-05-08)"
+   sodipodi:docname="logo_black.svg"
+   inkscape:version="1.4.2 (ebf0e940, 2025-05-08)"
    width="1395.0082"
    height="1535.1837"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -205,14 +205,14 @@
      inkscape:pagecheckerboard="0"
      showgrid="true"
      inkscape:object-paths="false"
-     inkscape:zoom="0.1767767"
-     inkscape:cx="2695.491"
-     inkscape:cy="585.4844"
-     inkscape:window-width="1920"
-     inkscape:window-height="1048"
-     inkscape:window-x="1280"
-     inkscape:window-y="-5"
-     inkscape:window-maximized="1"
+     inkscape:zoom="0.30147559"
+     inkscape:cx="668.37915"
+     inkscape:cy="761.25566"
+     inkscape:window-width="1472"
+     inkscape:window-height="698"
+     inkscape:window-x="0"
+     inkscape:window-y="34"
+     inkscape:window-maximized="0"
      inkscape:current-layer="svg193"
      fit-margin-top="0"
      fit-margin-left="0"
@@ -248,7 +248,7 @@
   </sodipodi:namedview>
   <g
      id="g2"
-     transform="translate(-3.9659318e-6,-2.7349443e-5)">
+     transform="matrix(0.90681047,0,0,0.91531979,139.55162,138.14821)">
     <path
        id="path189"
        d="m 1565.0037,2250.0925 -195,-102.5001 -498.92857,403.2304 439.92857,-608.5135 z"
