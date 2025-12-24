@@ -59,6 +59,21 @@ const ERR_NOT_SUPPORTED = 16;
 // Types
 // ============================================================================
 
+export interface RayforceDate {
+    _type: 'date';
+    value: number; // i32: days since 2000-01-01
+}
+
+export interface RayforceTime {
+    _type: 'time';
+    value: number; // i32: milliseconds since midnight
+}
+
+export interface RayforceTimestamp {
+    _type: 'timestamp';
+    value: bigint; // i64: nanoseconds since 2000-01-01
+}
+
 export type RayforceValue = 
     | null
     | boolean
@@ -66,7 +81,9 @@ export type RayforceValue =
     | bigint
     | string
     | symbol
-    | Date
+    | RayforceDate
+    | RayforceTime
+    | RayforceTimestamp
     | RayforceValue[]
     | RayforceTable
     | RayforceDict
@@ -150,6 +167,46 @@ class Serializer {
 // ============================================================================
 // Deserialization
 // ============================================================================
+
+// Rayforce epoch constants (from temporal.h)
+const RAYFORCE_EPOCH_YEAR = 2000;
+const UT_EPOCH_SHIFT_MS = 946684800 * 1000; // milliseconds from Unix epoch (1970-01-01) to Rayforce epoch (2000-01-01)
+const MSECS_IN_DAY = 24 * 60 * 60 * 1000;
+const NSECS_IN_DAY = 24 * 60 * 60 * 1000000000;
+
+// NULL value constants (from rayforce.h)
+const NULL_I32 = -2147483648; // 0x80000000
+const NULL_I64 = BigInt('-9223372036854775808'); // 0x8000000000000000LL
+
+/**
+ * Convert Rayforce Date (days since 2000-01-01) to RayforceDate or null
+ */
+function dateFromI32(days: number): RayforceDate | null {
+    if (days === NULL_I32) {
+        return null;
+    }
+    return { _type: 'date', value: days };
+}
+
+/**
+ * Convert Rayforce Time (milliseconds since midnight) to RayforceTime or null
+ */
+function timeFromI32(milliseconds: number): RayforceTime | null {
+    if (milliseconds === NULL_I32) {
+        return null;
+    }
+    return { _type: 'time', value: milliseconds };
+}
+
+/**
+ * Convert Rayforce Timestamp (nanoseconds since 2000-01-01) to RayforceTimestamp or null
+ */
+function timestampFromI64(nanoseconds: bigint): RayforceTimestamp | null {
+    if (nanoseconds === NULL_I64) {
+        return null;
+    }
+    return { _type: 'timestamp', value: nanoseconds };
+}
 
 class Deserializer {
     private buf: Buffer;
@@ -259,13 +316,19 @@ class Deserializer {
                 return this.readInt16LE();
 
             case -TYPE_I32:
-            case -TYPE_DATE:
-            case -TYPE_TIME:
                 return this.readInt32LE();
 
+            case -TYPE_DATE:
+                return dateFromI32(this.readInt32LE());
+
+            case -TYPE_TIME:
+                return timeFromI32(this.readInt32LE());
+
             case -TYPE_I64:
-            case -TYPE_TIMESTAMP:
                 return this.readBigInt64LE();
+
+            case -TYPE_TIMESTAMP:
+                return timestampFromI64(this.readBigInt64LE());
 
             case -TYPE_F64:
                 return this.readDoubleLE();
@@ -323,13 +386,19 @@ class Deserializer {
                 return this.readBuffer(len).toString('utf8');
 
             case TYPE_I32:
-            case TYPE_DATE:
-            case TYPE_TIME:
                 return Array.from({ length: len }, () => this.readInt32LE());
 
+            case TYPE_DATE:
+                return Array.from({ length: len }, () => dateFromI32(this.readInt32LE()));
+
+            case TYPE_TIME:
+                return Array.from({ length: len }, () => timeFromI32(this.readInt32LE()));
+
             case TYPE_I64:
-            case TYPE_TIMESTAMP:
                 return Array.from({ length: len }, () => this.readBigInt64LE());
+
+            case TYPE_TIMESTAMP:
+                return Array.from({ length: len }, () => timestampFromI64(this.readBigInt64LE()));
 
             case TYPE_F64:
                 return Array.from({ length: len }, () => this.readDoubleLE());
@@ -419,13 +488,13 @@ class Deserializer {
             case -TYPE_I32:
                 return { value: this.readInt32LE(), typeName };
             case -TYPE_DATE:
-                return { value: this.readInt32LE(), typeName };
+                return { value: dateFromI32(this.readInt32LE()), typeName };
             case -TYPE_TIME:
-                return { value: this.readInt32LE(), typeName };
+                return { value: timeFromI32(this.readInt32LE()), typeName };
             case -TYPE_I64:
                 return { value: this.readBigInt64LE(), typeName };
             case -TYPE_TIMESTAMP:
-                return { value: this.readBigInt64LE(), typeName };
+                return { value: timestampFromI64(this.readBigInt64LE()), typeName };
             case -TYPE_F64:
                 return { value: this.readDoubleLE(), typeName };
             case -TYPE_SYMBOL:
@@ -446,7 +515,8 @@ class Deserializer {
             case TYPE_SYMBOL:
             case TYPE_GUID:
             case TYPE_LIST:
-                return { value: this.deserializeVector(type), typeName };
+                const vectorValue = this.deserializeVector(type);
+                return { value: vectorValue, typeName };
             case TYPE_TABLE:
                 return { value: this.deserializeTable(), typeName };
             case TYPE_DICT:
@@ -761,8 +831,25 @@ export function formatValue(value: RayforceValue): string {
         return '`' + (Symbol.keyFor(value) || '');
     }
 
-    if (value instanceof Date) {
-        return value.toISOString();
+    if (typeof value === 'object' && value !== null && '_type' in value) {
+        if (value._type === 'date') {
+            return formatDate(value);
+        }
+        if (value._type === 'time') {
+            return formatTime(value);
+        }
+        if (value._type === 'timestamp') {
+            return formatTimestamp(value);
+        }
+        if (value._type === 'error') {
+            return `'${value.message}`;
+        }
+        if (value._type === 'table') {
+            return formatTable(value);
+        }
+        if (value._type === 'dict') {
+            return formatDict(value);
+        }
     }
 
     if (Array.isArray(value)) {
@@ -774,19 +861,6 @@ export function formatValue(value: RayforceValue): string {
         return `[${items.join(' ')}]`;
     }
 
-    if (typeof value === 'object' && '_type' in value) {
-        if (value._type === 'error') {
-            return `'${value.message}`;
-        }
-
-        if (value._type === 'table') {
-            return formatTable(value);
-        }
-
-        if (value._type === 'dict') {
-            return formatDict(value);
-        }
-    }
 
     return String(value);
 }
@@ -885,6 +959,69 @@ function formatDict(dict: RayforceDict): string {
     const keys = formatValue(dict.keys);
     const values = formatValue(dict.values);
     return `${keys}!${values}`;
+}
+
+/**
+ * Format a Rayforce Date (YYYY.MM.DD)
+ * Based on date_fmt_into in format.c
+ */
+function formatDate(date: RayforceDate): string {
+    // Convert days since 2000-01-01 to a JavaScript Date
+    // Then format as YYYY.MM.DD
+    const jsDate = new Date((date.value * MSECS_IN_DAY) + UT_EPOCH_SHIFT_MS);
+    const year = jsDate.getUTCFullYear();
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+    return `${year}.${month}.${day}`;
+}
+
+/**
+ * Format a Rayforce Time (HH:MM:SS.mmm)
+ * Based on time_fmt_into in format.c
+ */
+function formatTime(time: RayforceTime): string {
+    const ms = time.value;
+    const sign = ms < 0 ? -1 : 1;
+    const absMs = Math.abs(ms);
+    
+    const totalSeconds = Math.floor(absMs / 1000);
+    const milliseconds = absMs % 1000;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+    const mmm = String(milliseconds).padStart(3, '0');
+    
+    if (sign < 0) {
+        return `-${hh}:${mm}:${ss}.${mmm}`;
+    }
+    return `${hh}:${mm}:${ss}.${mmm}`;
+}
+
+/**
+ * Format a Rayforce Timestamp (YYYY.MM.DDDHH:MM:SS.nnnnnnnnn)
+ * Based on timestamp_fmt_into in format.c
+ */
+function formatTimestamp(timestamp: RayforceTimestamp): string {
+    // Convert nanoseconds since 2000-01-01 to milliseconds
+    const milliseconds = Number(timestamp.value / BigInt(1000000));
+    const jsDate = new Date(milliseconds + UT_EPOCH_SHIFT_MS);
+    
+    const year = jsDate.getUTCFullYear();
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+    const hours = String(jsDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(jsDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(jsDate.getUTCSeconds()).padStart(2, '0');
+    
+    // Extract nanoseconds from the original value
+    const nanos = Number(timestamp.value % BigInt(1000000000));
+    const nanosStr = String(nanos).padStart(9, '0');
+    
+    return `${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}`;
 }
 
 /**

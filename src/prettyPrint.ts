@@ -3,7 +3,7 @@
  * Renders Rayforce types as beautiful HTML for the REPL webview
  */
 
-import { RayforceValue, RayforceTable, RayforceDict, RayforceError } from './rayforceIpc';
+import { RayforceValue, RayforceTable, RayforceDict, RayforceError, RayforceDate, RayforceTime, RayforceTimestamp } from './rayforceIpc';
 
 // ============================================================================
 // Configuration
@@ -62,6 +62,9 @@ export function detectType(value: RayforceValue): RayforceTypeName {
         if (value._type === 'table') return 'Table';
         if (value._type === 'dict') return 'Dict';
         if (value._type === 'error') return 'Error';
+        if (value._type === 'date') return 'Date';
+        if (value._type === 'time') return 'Time';
+        if (value._type === 'timestamp') return 'Timestamp';
     }
     return 'Unknown';
 }
@@ -318,6 +321,15 @@ function formatValueInner(value: RayforceValue, config: PrettyPrintConfig, depth
         if (value._type === 'dict') {
             return formatDictHtml(value as RayforceDict, config, depth);
         }
+        if (value._type === 'date') {
+            return formatDateHtml(value as RayforceDate);
+        }
+        if (value._type === 'time') {
+            return formatTimeHtml(value as RayforceTime);
+        }
+        if (value._type === 'timestamp') {
+            return formatTimestampHtml(value as RayforceTimestamp);
+        }
     }
 
     return `<span class="rf-null">${escapeHtml(String(value))}</span>`;
@@ -411,6 +423,138 @@ function formatTimestamp(d: Date): string {
     const pad = (n: number, len: number = 2) => n.toString().padStart(len, '0');
     const formatted = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}D${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
     return `<span class="rf-timestamp">${formatted}</span>`;
+}
+
+// Constants for Rayforce epoch (from rayforceIpc.ts)
+const MSECS_IN_DAY = 24 * 60 * 60 * 1000;
+const UT_EPOCH_SHIFT_MS = 946684800 * 1000; // milliseconds from Unix epoch (1970-01-01) to Rayforce epoch (2000-01-01)
+const NULL_I32 = -2147483648; // 0x80000000
+const NULL_I64 = BigInt('-9223372036854775808'); // 0x8000000000000000LL
+
+// Format RayforceDate object (HTML)
+function formatDateHtml(date: RayforceDate): string {
+    if (date.value === NULL_I32) {
+        return `<span class="rf-null">0Nd</span>`;
+    }
+    
+    // Convert days since 2000-01-01 to a JavaScript Date
+    const jsDate = new Date((date.value * MSECS_IN_DAY) + UT_EPOCH_SHIFT_MS);
+    const year = jsDate.getUTCFullYear();
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+    
+    return `<span class="rf-date">${year}.${month}.${day}</span>`;
+}
+
+// Format RayforceTime object (HTML)
+function formatTimeHtml(time: RayforceTime): string {
+    if (time.value === NULL_I32) {
+        return `<span class="rf-null">0Nt</span>`;
+    }
+    
+    const ms = time.value;
+    const sign = ms < 0 ? '-' : '';
+    const absMs = Math.abs(ms);
+    
+    const totalSeconds = Math.floor(absMs / 1000);
+    const milliseconds = absMs % 1000;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+    const mmm = String(milliseconds).padStart(3, '0');
+    
+    return `<span class="rf-time">${sign}${hh}:${mm}:${ss}.${mmm}</span>`;
+}
+
+// Format RayforceTimestamp object (HTML)
+function formatTimestampHtml(timestamp: RayforceTimestamp): string {
+    if (timestamp.value === NULL_I64) {
+        return `<span class="rf-null">0Np</span>`;
+    }
+    
+    // Convert nanoseconds since 2000-01-01 to milliseconds
+    const milliseconds = Number(timestamp.value / BigInt(1000000));
+    const jsDate = new Date(milliseconds + UT_EPOCH_SHIFT_MS);
+    
+    const year = jsDate.getUTCFullYear();
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+    const hours = String(jsDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(jsDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(jsDate.getUTCSeconds()).padStart(2, '0');
+    
+    // Extract nanoseconds from the original value
+    const nanos = Number(timestamp.value % BigInt(1000000000));
+    const nanosStr = String(nanos).padStart(9, '0');
+    
+    return `<span class="rf-timestamp">${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}</span>`;
+}
+
+// Format RayforceDate object (plain text)
+function formatDateText(date: RayforceDate): string {
+    if (date.value === NULL_I32) {
+        return '0Nd';
+    }
+    
+    // Convert days since 2000-01-01 to a JavaScript Date
+    const jsDate = new Date((date.value * MSECS_IN_DAY) + UT_EPOCH_SHIFT_MS);
+    const year = jsDate.getUTCFullYear();
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+    
+    return `${year}.${month}.${day}`;
+}
+
+// Format RayforceTime object (plain text)
+function formatTimeText(time: RayforceTime): string {
+    if (time.value === NULL_I32) {
+        return '0Nt';
+    }
+    
+    const ms = time.value;
+    const sign = ms < 0 ? '-' : '';
+    const absMs = Math.abs(ms);
+    
+    const totalSeconds = Math.floor(absMs / 1000);
+    const milliseconds = absMs % 1000;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const hh = String(hours).padStart(2, '0');
+    const mm = String(minutes).padStart(2, '0');
+    const ss = String(seconds).padStart(2, '0');
+    const mmm = String(milliseconds).padStart(3, '0');
+    
+    return `${sign}${hh}:${mm}:${ss}.${mmm}`;
+}
+
+// Format RayforceTimestamp object (plain text)
+function formatTimestampText(timestamp: RayforceTimestamp): string {
+    if (timestamp.value === NULL_I64) {
+        return '0Np';
+    }
+    
+    // Convert nanoseconds since 2000-01-01 to milliseconds
+    const milliseconds = Number(timestamp.value / BigInt(1000000));
+    const jsDate = new Date(milliseconds + UT_EPOCH_SHIFT_MS);
+    
+    const year = jsDate.getUTCFullYear();
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+    const hours = String(jsDate.getUTCHours()).padStart(2, '0');
+    const minutes = String(jsDate.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(jsDate.getUTCSeconds()).padStart(2, '0');
+    
+    // Extract nanoseconds from the original value
+    const nanos = Number(timestamp.value % BigInt(1000000000));
+    const nanosStr = String(nanos).padStart(9, '0');
+    
+    return `${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}`;
 }
 
 function formatArray(arr: RayforceValue[], config: PrettyPrintConfig, depth: number, pagination?: PaginationInfo): string {
@@ -675,6 +819,15 @@ export function formatValueText(value: RayforceValue, config: PrettyPrintConfig 
         if (value._type === 'dict') {
             const dict = value as RayforceDict;
             return `${formatValueText(dict.keys, config)}!${formatValueText(dict.values, config)}`;
+        }
+        if (value._type === 'date') {
+            return formatDateText(value as RayforceDate);
+        }
+        if (value._type === 'time') {
+            return formatTimeText(value as RayforceTime);
+        }
+        if (value._type === 'timestamp') {
+            return formatTimestampText(value as RayforceTimestamp);
         }
     }
     return String(value);

@@ -37,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     const refreshCommand = vscode.commands.registerCommand('rayforce.refreshInstances', () => {
-        instancesProvider.refresh();
+            instancesProvider.refresh();
         instancesProvider.updateProcessInfo();
     });
 
@@ -102,7 +102,7 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     const disconnectCommand = vscode.commands.registerCommand('rayforce.disconnectFromInstance', () => {
-        instancesProvider.disconnectFromInstance();
+            instancesProvider.disconnectFromInstance();
         if (RayforceReplPanel.currentPanel) {
             RayforceReplPanel.currentPanel.disconnect();
         }
