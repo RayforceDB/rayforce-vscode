@@ -3,22 +3,22 @@
     <td style="border:0;padding:0;">
       <a href="https://vscode.rayforcedb.com">
         <picture>
-            <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/logo_light.svg">
-            <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/logo_dark.svg">
-            <img src="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/logo_dark.svg" width="200">
+            <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/logo_light.png">
+            <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/logo_dark.png">
+            <img src="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/logo_dark.png" width="200">
         </picture>
       </a>
     </td>
     <td style="border:0;padding:0;">
       <h1>A Complete Development Environment Embedded in VSCode for <a href="https://core.rayforcedb.com"><picture>
-            <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/official_logo_light_full.svg">
-            <img src="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/official_logo_full.svg" alt="RayforceDB" height="40" style="vertical-align: bottom;">
+            <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/official_logo_light_full.png">
+            <img src="https://raw.githubusercontent.com/RayforceDB/rayforce-vscode/refs/heads/master/docs/docs/assets/official_logo_full.png" alt="RayforceDB" height="40" style="vertical-align: bottom;">
         </picture></a></h1>
     </td>
   </tr>
 </table>
 
-![Documentation](https://img.shields.io/website?url=https%3A%2F%2Fvscode.rayforcedb.com%2F) [![Version](https://img.shields.io/github/v/release/RayforceDB/rayforce-vscode)](https://github.com/RayforceDB/rayforce-vscode/releases) [![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode) [![OpenVSX](https://img.shields.io/badge/OpenVSX-Registry-purple)](https://open-vsx.org/extension/RayforceDB/rayforce-vscode) [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+![Documentation](https://img.shields.io/website?url=https%3A%2F%2Fvscode.rayforcedb.com%2F) [![Version](https://img.shields.io/github/v/release/RayforceDB/rayforce-vscode)](https://github.com/RayforceDB/rayforce-vscode/releases) [![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode) [![OpenVSX](https://img.shields.io/badge/OpenVSX-Registry-purple)](https://open-vsx.org/extension/RayforceDB/rayforce-vscode) [![License](https://img.shields.io/badge/license-MIT-green.png)](LICENSE)
 
 A complete development environment for RayforceDB, right inside VS Code. Manage instances, execute commands via REPL, and enjoy full Rayfall language support.
 

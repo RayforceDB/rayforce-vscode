@@ -6,6 +6,13 @@ All notable changes to RayforceDB VS Code Extension will be documented in this f
     You can also subscribe for release notifications by joining our [:simple-zulip: Zulip](https://rayforcedb.zulipchat.com/#narrow/channel/549008-Discuss)!
 
 
+## **`0.4.1`**
+
+- Visual improvements to the Marketplace page
+
+2025-01-25 | **[🔗 VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode)** | **[🔗 GitHub](https://github.com/RayforceDB/rayforce-vscode/releases/tag/0.4.1)**
+
+
 ## **`0.4.0`**
 
 - Enhanced instance manager with folder organization for saved instances
