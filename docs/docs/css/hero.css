@@ -1,0 +1,561 @@
+/* ============================================================================
+   HERO SECTION
+   ============================================================================ */
+
+/* Remove MkDocs default padding/margin on pages with hero section */
+.md-content__inner:has(.hero-section) {
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+}
+
+.md-content__inner:has(.hero-section) > .hero-section:first-child {
+  margin-top: 0 !important;
+}
+
+.md-content:has(.hero-section) {
+  max-width: none !important;
+  margin-top: 0 !important;
+}
+
+/* Hero section styles are now in index.html */
+
+/* Dark background with cell pattern - using colors from index.html */
+.hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  background-color: #021828;  /* primary-navy-dark from index.html */
+  z-index: 0;
+}
+
+/* Light theme background */
+[data-md-color-scheme="default"] .hero-background {
+  background-color: #ffffff;
+}
+
+/* Cell pattern overlay - using accent-golden from index.html */
+.hero-cells {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(233, 160, 51, 0.1) 1px, transparent 1px),  /* accent-golden from index.html */
+    linear-gradient(90deg, rgba(233, 160, 51, 0.1) 1px, transparent 1px);  /* accent-golden from index.html */
+  background-size: 50px 50px;
+  opacity: 0.3;
+}
+
+/* Light theme cell pattern - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-cells {
+  background-image:
+    linear-gradient(rgba(4, 35, 59, 0.2) 1px, transparent 1px),  /* primary-navy from index.html */
+    linear-gradient(90deg, rgba(4, 35, 59, 0.2) 1px, transparent 1px);  /* primary-navy from index.html */
+  opacity: 0.4;
+}
+
+/* Add golden glow effect - using accent-golden from index.html */
+.hero-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(233, 160, 51, 0.15) 0%,  /* accent-golden from index.html */
+    transparent 70%
+  );
+  z-index: 1;
+}
+
+/* Light theme glow effect - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-background::before {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(4, 35, 59, 0.3) 0%,  /* primary-navy from index.html */
+    rgba(4, 35, 59, 0.15) 40%,  /* primary-navy from index.html */
+    transparent 80%
+  );
+}
+
+/* Container for content and logo */
+.hero-container {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  width: 100%;
+  max-width: 1400px;
+  padding: 4rem;
+  align-items: center;
+}
+
+/* Content on the left - dark theme default */
+.hero-content {
+  color: white !important;
+}
+
+/* Light theme text colors - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-content {
+  color: #04233b !important;  /* primary-navy from index.html */
+}
+
+[data-md-color-scheme="default"] .hero-content h1,
+[data-md-color-scheme="default"] .hero-subtitle {
+  color: #04233b !important;  /* primary-navy from index.html */
+}
+
+/* Dark theme text colors */
+[data-md-color-scheme="slate"] .hero-content,
+[data-md-color-scheme="slate"] .hero-content h1,
+[data-md-color-scheme="slate"] .hero-subtitle {
+  color: white !important;
+}
+
+.hero-content h1,
+.hero-section .hero-content h1,
+.md-typeset .hero-section .hero-content h1 {
+  font-size: 4rem;
+  font-weight: 800;
+  margin: 0 0 1rem 0;
+  color: white !important;
+  line-height: 1.1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Light theme h1 - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-content h1,
+[data-md-color-scheme="default"] .hero-section .hero-content h1,
+[data-md-color-scheme="default"] .md-typeset .hero-section .hero-content h1 {
+  color: #04233b !important;  /* primary-navy from index.html */
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.hero-subtitle,
+.hero-section .hero-subtitle,
+.md-typeset .hero-section .hero-subtitle {
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin: 0 0 2.5rem 0;
+  color: rgba(255, 255, 255, 0.9) !important;
+  line-height: 1.6;
+}
+
+/* Light theme subtitle - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-subtitle,
+[data-md-color-scheme="default"] .hero-section .hero-subtitle,
+[data-md-color-scheme="default"] .md-typeset .hero-section .hero-subtitle {
+  color: rgba(4, 35, 59, 0.8) !important;  /* primary-navy from index.html */
+}
+
+.hero-subtitle .hero-subtitle-logo,
+.hero-subtitle-logo {
+  height: 1.725em !important;
+  max-height: 2.59rem !important;
+  width: auto !important;
+  display: inline !important;
+  vertical-align: middle !important;
+  line-height: inherit !important;
+  margin: 0 0.25rem !important;
+  padding: 0 !important;
+  object-fit: contain !important;
+}
+
+/* Theme-based logo switching for RayforceDB logo */
+/* Default: show light logo (for dark theme) */
+.hero-subtitle-logo--light {
+  display: none !important;
+}
+
+.hero-subtitle-logo--dark {
+  display: inline !important;
+}
+
+/* Light theme: show dark logo, hide light logo */
+[data-md-color-scheme="default"] .hero-subtitle-logo--dark {
+  display: none !important;
+}
+
+[data-md-color-scheme="default"] .hero-subtitle-logo--light {
+  display: inline !important;
+}
+
+/* Dark theme: show light logo, hide dark logo */
+[data-md-color-scheme="slate"] .hero-subtitle-logo--dark {
+  display: inline !important;
+}
+
+[data-md-color-scheme="slate"] .hero-subtitle-logo--light {
+  display: none !important;
+}
+
+.hero-subtitle .hero-subtitle-logo svg,
+.hero-subtitle-logo svg {
+  height: 100% !important;
+  width: auto !important;
+}
+
+/* Logo link styling */
+.hero-subtitle-logo-link {
+  display: inline !important;
+  text-decoration: none !important;
+  border: none !important;
+  outline: none !important;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  vertical-align: middle !important;
+}
+
+.hero-subtitle-logo-link:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+  filter: drop-shadow(0 0 8px rgba(233, 160, 51, 0.6));  /* accent-golden from index.html */
+}
+
+.hero-subtitle-logo-link:hover .hero-subtitle-logo {
+  filter: brightness(1.1);
+}
+
+.hero-subtitle-logo-link:focus {
+  outline: 2px solid rgba(233, 160, 51, 0.5);  /* accent-golden from index.html */
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Links container */
+.hero-links {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Secondary links container - buttons in a grid */
+.hero-links-secondary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.hero-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.5rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.5rem;
+  color: white !important;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.hero-link span {
+  color: white !important;
+}
+
+/* Light theme links - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-link {
+  background-color: rgba(4, 35, 59, 0.1);  /* primary-navy from index.html */
+  border: 1px solid rgba(4, 35, 59, 0.2);  /* primary-navy from index.html */
+  color: #04233b !important;  /* primary-navy from index.html */
+}
+
+[data-md-color-scheme="default"] .hero-link span {
+  color: #04233b !important;  /* primary-navy from index.html */
+}
+
+/* Dark theme links */
+[data-md-color-scheme="slate"] .hero-link,
+[data-md-color-scheme="slate"] .hero-link span {
+  color: white !important;
+}
+
+.hero-link:hover {
+  background-color: rgba(233, 160, 51, 0.2);  /* accent-golden from index.html */
+  border-color: rgba(233, 160, 51, 0.5);  /* accent-golden from index.html */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(233, 160, 51, 0.3);  /* accent-golden from index.html */
+}
+
+/* Light theme link hover - using primary-navy from index.html */
+[data-md-color-scheme="default"] .hero-link:hover {
+  background-color: rgba(4, 35, 59, 0.15);  /* primary-navy from index.html */
+  border-color: rgba(4, 35, 59, 0.4);  /* primary-navy from index.html */
+  box-shadow: 0 4px 12px rgba(4, 35, 59, 0.2);  /* primary-navy from index.html */
+}
+
+/* Highlighted primary button - using accent-golden from index.html */
+.hero-link--primary {
+  background-color: rgba(233, 160, 51, 0.9) !important;  /* accent-golden from index.html */
+  border-color: rgba(233, 160, 51, 1) !important;  /* accent-golden from index.html */
+  color: #021828 !important;  /* primary-navy-dark from index.html */
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(233, 160, 51, 0.4);  /* accent-golden from index.html */
+  width: 100%;
+  justify-content: center;
+}
+
+.hero-link--primary:hover {
+  background-color: rgba(233, 160, 51, 1) !important;  /* accent-golden from index.html */
+  border-color: rgba(233, 160, 51, 1) !important;  /* accent-golden from index.html */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(233, 160, 51, 0.5);  /* accent-golden from index.html */
+}
+
+/* Light theme primary button - keep gold but adjust text */
+[data-md-color-scheme="default"] .hero-link--primary {
+  background-color: rgba(233, 160, 51, 0.95) !important;  /* accent-golden from index.html */
+  color: #021828 !important;  /* primary-navy-dark from index.html */
+}
+
+.hero-link-icon {
+  height: 1.2rem;
+  width: 10;
+  max-height: 20px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.hero-link-emoji {
+  font-size: 1.2rem;
+  line-height: 1;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Logo on the right */
+.hero-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.hero-logo img,
+.hero-logo-img {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 20px rgba(233, 160, 51, 0.3));  /* accent-golden from index.html */
+}
+
+/* Theme-based logo switching for main hero logo */
+/* Default: show light logo (for dark theme) */
+.hero-logo-img--light {
+  display: none !important;
+}
+
+.hero-logo-img--dark {
+  display: block !important;
+}
+
+/* Light theme: show dark logo, hide light logo */
+[data-md-color-scheme="default"] .hero-logo-img--dark {
+  display: none !important;
+}
+
+[data-md-color-scheme="default"] .hero-logo-img--light {
+  display: block !important;
+}
+
+/* Dark theme: show light logo, hide dark logo */
+[data-md-color-scheme="slate"] .hero-logo-img--dark {
+  display: block !important;
+}
+
+[data-md-color-scheme="slate"] .hero-logo-img--light {
+  display: none !important;
+}
+
+/* Responsive design */
+@media screen and (max-width: 968px) {
+  .hero-section {
+    position: absolute;
+    min-height: 100vh;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+  }
+
+  .hero-container {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+    padding: 3rem 2rem;
+    min-height: auto;
+    position: relative;
+  }
+
+  .hero-logo {
+    order: 1;
+    padding: 1rem;
+  }
+
+  .hero-logo img,
+  .hero-logo-img {
+    max-width: 350px;
+  }
+
+  .hero-content {
+    order: 2;
+    text-align: center;
+  }
+
+  .hero-content h1 {
+    font-size: 1.75rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+  }
+
+  .hero-subtitle .hero-subtitle-logo,
+  .hero-subtitle-logo {
+    height: 1.725em !important;
+    max-height: 2.16rem !important;
+  }
+
+  .hero-links {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .hero-link--primary {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-links-secondary {
+    width: 100%;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .hero-links-secondary .hero-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-link {
+    font-size: 0.85rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .hero-section {
+    position: absolute;
+    min-height: 100vh;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hero-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+  }
+
+  .hero-container {
+    padding: 2rem 1rem;
+    gap: 1.5rem;
+    min-height: auto;
+    position: relative;
+  }
+
+  .hero-logo {
+    order: 1;
+    padding: 0.5rem;
+  }
+
+  .hero-logo img,
+  .hero-logo-img {
+    max-width: 250px;
+  }
+
+  .hero-content {
+    order: 2;
+    text-align: center;
+    padding: 0;
+  }
+
+  .hero-content h1 {
+    display: none;
+  }
+
+  .hero-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-subtitle .hero-subtitle-logo,
+  .hero-subtitle-logo {
+    height: 1.725em !important;
+    max-height: 1.725rem !important;
+  }
+
+  .hero-links {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .hero-link--primary {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-links-secondary {
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 0.75rem;
+  }
+
+  .hero-links-secondary .hero-link {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-link {
+    font-size: 0.8rem;
+    padding: 0.7rem 1.1rem;
+  }
+
+  /* Hide footer on mobile */
+  .md-footer {
+    display: none !important;
+  }
+
+  /* Hide source code view and edit buttons on mobile */
+  .md-content__button,
+  .md-content__inner > .md-typeset .md-content__button,
+  [data-md-component="content"] .md-content__button,
+  .md-typeset .md-content__button,
+  a[title*="view"],
+  a[title*="edit"],
+  a[title*="View"],
+  a[title*="Edit"],
+  .md-content__inner > .md-typeset > .md-content__button {
+    display: none !important;
+  }
+}

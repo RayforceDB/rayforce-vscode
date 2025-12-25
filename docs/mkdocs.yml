@@ -1,0 +1,118 @@
+site_name: RayforceDB VS Code Extension
+repo_url: https://github.com/RayforceDB/rayforce-vscode
+repo_name: GitHub
+
+docs_dir: docs
+
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/github
+  favicon: assets/favicon.svg
+  features:
+    - content.action.edit
+    - content.action.view
+    - content.code.annotate
+    - content.code.copy
+    - content.tooltips
+    - navigation.expand
+    - navigation.indexes
+    - navigation.tabs
+    - navigation.top
+    - search.highlight
+    - search.share
+    - search.suggest
+
+  palette:
+    # Colors are overridden via CSS to match index.html:
+    # primary-navy: #04233b, accent-golden: #e9a033
+    - scheme: slate
+      primary: amber  # Overridden to #04233b (primary-navy) via CSS
+      accent: amber   # Overridden to #e9a033 (accent-golden) via CSS
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: amber  # Overridden to #04233b (primary-navy) via CSS
+      accent: amber   # Overridden to #e9a033 (accent-golden) via CSS
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+  font:
+    text: Outfit
+    code: JetBrains Mono
+  logo: assets/logo_light_full.svg
+
+
+extra:
+    social:
+      - icon: fontawesome/brands/github
+        link: https://github.com/RayforceDB/rayforce-vscode
+
+copyright: Copyright &copy; 2025 RayforceDB
+
+plugins:
+  - offline
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.inlinehilite
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.arithmatex:
+      generic: true
+  - toc:
+      permalink: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.details
+  - pymdownx.tilde
+  - attr_list
+  - md_in_html
+  - tables
+  - admonition
+  - footnotes
+
+extra_css:
+  - https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap
+  - https://adobe-fonts.github.io/source-code-pro/source-code-pro.css
+  - css/custom.css
+  - css/hero.css
+  - css/index-content.css
+
+nav:
+  - Home: index.html
+  - Get Started:
+    - Overview: content/get-started/overview.md
+    - Installation: content/get-started/installation.md
+    - Features: content/get-started/features.md
+  - Documentation:
+    - Overview: content/documentation/overview.md
+    - Usage:
+      - Overview: content/documentation/usage/overview.md
+      - Instances: content/documentation/usage/instances.md
+      - REPL: content/documentation/usage/repl.md
+      - Monitoring: content/documentation/usage/monitoring.md
+    - Syntax Highlighting:
+      - Overview: content/documentation/syntax/overview.md
+  - License: content/license.md
+

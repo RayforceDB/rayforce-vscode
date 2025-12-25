@@ -1,0 +1,369 @@
+/* ============================================================================
+   INDEX PAGE CONTENT STYLES
+   ============================================================================ */
+
+/* Features Section */
+.features {
+  padding: 5rem 2rem;
+  background: var(--bg-white);
+  position: relative;
+  z-index: 1;
+}
+
+/* Content is in normal flow after hero section */
+/* Hero section is absolute, so we need to add margin-top to push content down */
+body:has(.hero-section) .features {
+  margin-top: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure all content sections are visible after hero */
+body:has(.hero-section) .installation,
+body:has(.hero-section) .syntax {
+  position: relative;
+  z-index: 1;
+}
+
+/* Dark theme features */
+[data-md-color-scheme="slate"] .features {
+  background: #021828;
+}
+
+.features-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--primary-navy);
+  margin-bottom: 1rem;
+}
+
+.section-header h2 strong {
+  color: var(--accent-golden);
+  font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] .section-header h2 {
+  color: #ffffff;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+[data-md-color-scheme="slate"] .section-header p {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.features-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.features-grid .feature-card {
+  flex: 0 1 320px;
+  max-width: 350px;
+}
+
+@media (max-width: 640px) {
+  .features-grid .feature-card {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+}
+
+.feature-card {
+  background: var(--bg-white);
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent-golden);
+}
+
+[data-md-color-scheme="slate"] .feature-card {
+  background: #0a3a5c;
+  border-color: #0a3a5c;
+}
+
+[data-md-color-scheme="slate"] .feature-card:hover {
+  border-color: var(--accent-golden);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, var(--accent-golden), var(--accent-golden-light));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.feature-icon i {
+  font-size: 1.5rem;
+  color: var(--primary-navy);
+}
+
+.feature-card h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-navy);
+  margin-bottom: 0.75rem;
+}
+
+[data-md-color-scheme="slate"] .feature-card h3 {
+  color: #ffffff;
+}
+
+.feature-card p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+[data-md-color-scheme="slate"] .feature-card p {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.feature-card code {
+  background: rgba(233, 160, 51, 0.1);
+  color: var(--accent-golden);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+[data-md-color-scheme="slate"] .feature-card code {
+  background: rgba(233, 160, 51, 0.2);
+  color: var(--accent-golden-light);
+}
+
+/* Installation Section */
+.installation {
+  padding: 5rem 2rem;
+  background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
+  color: white;
+}
+
+.installation-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.installation h2 {
+  font-size: 2.5rem;
+  font-weight: 300;
+  margin-bottom: 1rem;
+}
+
+.installation h2 strong {
+  color: var(--accent-golden);
+  font-weight: 700;
+}
+
+.installation > p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin-bottom: 3rem;
+}
+
+.install-methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  text-align: left;
+}
+
+.install-method {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.install-method h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.install-method h3 i {
+  color: var(--accent-golden);
+}
+
+.install-method p {
+  opacity: 0.85;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.install-code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.install-code code {
+  color: var(--accent-golden-light);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent-golden);
+  color: var(--primary-navy-dark);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: var(--accent-golden-light);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(233, 160, 51, 0.3);
+}
+
+.btn-primary {
+  background: var(--accent-golden);
+  color: var(--primary-navy-dark);
+}
+
+/* Syntax Section */
+.syntax {
+  padding: 5rem 2rem;
+  background: var(--bg-light);
+}
+
+[data-md-color-scheme="slate"] .syntax {
+  background: #04233b;
+}
+
+.syntax-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.syntax-demo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.syntax-demo-single {
+  margin-top: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.syntax-card {
+  background: var(--bg-white);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+[data-md-color-scheme="slate"] .syntax-card {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.syntax-card-header {
+  background: var(--primary-navy);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.syntax-card-header i {
+  color: var(--accent-golden);
+}
+
+.syntax-card pre {
+  padding: 1.5rem;
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  background: #1e1e2e;
+  color: #f8f8f2;
+}
+
+.syntax-card pre .comment {
+  color: #6272a4;
+  font-style: italic;
+}
+
+.syntax-card pre .keyword {
+  color: #50fa7b;
+}
+
+.syntax-card pre .string {
+  color: #f1fa8c;
+}
+
+.syntax-card pre .number {
+  color: #ffb86c;
+}
+
+.syntax-card pre .symbol {
+  color: #bd93f9;
+}
+
+.syntax-card pre .func {
+  color: #8be9fd;
+}
+
+/* Responsive */
+@media (max-width: 968px) {
+  .syntax-demo {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .section-header h2,
+  .installation h2 {
+    font-size: 1.8rem;
+  }
+}
+

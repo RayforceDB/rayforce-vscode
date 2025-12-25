@@ -1,0 +1,781 @@
+/*
+ *   Copyright (c) 2025 Anton Kundenko <singaraiona@gmail.com>
+ *   All rights reserved.
+ *
+ *   Permission is hereby granted, free of charge, to any person obtaining a copy
+ *   of this software and associated documentation files (the "Software"), to deal
+ *   in the Software without restriction, including without limitation the rights
+ *   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ *   copies of the Software, and to permit persons to whom the Software is
+ *   furnished to do so, subject to the following conditions:
+ *
+ *   The above copyright notice and this permission notice shall be included in all
+ *   copies or substantial portions of the Software.
+ *
+ *   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ *   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ *   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ *   SOFTWARE.
+ */
+
+/* ============================================================================
+   PRODUCTION-GRADE COLOR PALETTE SYSTEM
+   Navy & Gold Theme
+   WCAG AA/AAA compliant, optimized for readability and low eye-strain
+   ============================================================================ */
+
+/* Brand Colors - Matching index.html */
+:root {
+  --primary-navy: #04233b;
+  --primary-navy-light: #0a3a5c;
+  --primary-navy-dark: #021828;
+  
+  --navy-900: #021828;  /* primary-navy-dark */
+  --navy-800: #04233b;  /* primary-navy */
+  --navy-700: #0a3a5c;  /* primary-navy-light */
+  --navy-600: #1F3A5F;
+  --navy-500: #2D4A6F;
+  --navy-400: #4A6A8F;
+  --navy-300: #7A9ABF;
+  --navy-200: #B0C4DE;
+  --navy-100: #E0E8F0;
+
+  --accent-golden: #e9a033;
+  --accent-golden-light: #f0b85a;
+  
+  --gold-500: #e9a033;  /* accent-golden */
+  --gold-400: #f0b85a;  /* accent-golden-light */
+  --gold-300: #F5CA6A;
+  --gold-600: #C98A18;
+  --gold-700: #A87014;
+}
+
+/* ----------------------------------------------------------------------------
+   LIGHT MODE COLOR TOKENS
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="default"] {
+  /* Text Colors - Matching index.html */
+  --text-primary: #333;            /* Main body text - from index.html */
+  --text-secondary: #555;          /* Secondary text - from index.html */
+  --text-tertiary: #718096;        /* Tertiary/muted text - WCAG AA (4.8:1) */
+  --text-muted: #757575;           /* Muted text - from index.html */
+  --text-inverse: #ffffff;         /* Text on dark backgrounds */
+  
+  /* Background Colors - Matching index.html */
+  --bg-primary: #ffffff;           /* bg-white from index.html */
+  --bg-white: #ffffff;            /* bg-white from index.html */
+  --bg-light: #f8f9fa;             /* bg-light from index.html */
+  --bg-secondary: #f8f9fa;        /* bg-light from index.html */
+  --bg-tertiary: var(--navy-200);  /* Tertiary background (hover states) */
+  --bg-elevated: #ffffff;          /* Elevated surfaces (modals, dropdowns) */
+  
+  /* Border Colors - Subtle navy - Matching index.html */
+  --border-primary: var(--navy-200); /* Primary borders */
+  --border-secondary: var(--navy-300); /* Secondary borders */
+  --border-focus: var(--accent-golden);    /* Focus ring (gold accent) - from index.html */
+  
+  /* Accent Colors - Gold - Matching index.html */
+  --accent-primary: var(--accent-golden);      /* Primary accent (gold) - from index.html */
+  --accent-hover: var(--accent-golden-light);  /* Hover state - lighter gold - from index.html */
+  --accent-active: var(--gold-600);            /* Active state - darker gold */
+  --accent-light: #fef3c7;                     /* Light accent background */
+  
+  /* Link Colors */
+  --link-color: var(--accent-golden);          /* Links - matches accent from index.html */
+  --link-hover: var(--accent-golden-light);    /* Link hover - from index.html */
+  --link-visited: var(--gold-700);             /* Visited links */
+  
+  /* Code Colors - Subtle, readable */
+  --code-bg: var(--navy-100);         /* Code block background */
+  --code-text: #1a1a1a;               /* Code text */
+  --code-border: var(--navy-200);      /* Code block border */
+  --code-inline-bg: var(--navy-100);   /* Inline code background */
+  
+  /* Syntax Highlighting - Accessible, low-saturation */
+  --code-hl-keyword: #7c3aed;         /* Keywords (purple) - WCAG AA */
+  --code-hl-string: #059669;           /* Strings (green) - WCAG AA */
+  --code-hl-number: var(--gold-600);  /* Numbers (gold) - WCAG AA */
+  --code-hl-function: #0284c7;         /* Functions (blue) - WCAG AA */
+  --code-hl-comment: #64748b;          /* Comments (muted gray) */
+  --code-hl-operator: var(--navy-600); /* Operators (navy) */
+  --code-hl-punctuation: #475569;      /* Punctuation (gray) */
+  
+  /* Callout Colors - Semantic, accessible */
+  --callout-info-bg: #dbeafe;         /* Info background */
+  --callout-info-border: #3b82f6;      /* Info border */
+  --callout-info-text: #1e40af;        /* Info text */
+  
+  --callout-warn-bg: #fef3c7;         /* Warning background */
+  --callout-warn-border: var(--gold-500); /* Warning border */
+  --callout-warn-text: var(--gold-700);   /* Warning text */
+  
+  --callout-danger-bg: #fee2e2;       /* Danger background */
+  --callout-danger-border: #ef4444;   /* Danger border */
+  --callout-danger-text: #991b1b;     /* Danger text */
+  
+  --callout-success-bg: #d1fae5;      /* Success background */
+  --callout-success-border: #10b981;  /* Success border */
+  --callout-success-text: #065f46;    /* Success text */
+  
+  /* Shadow Colors */
+  --shadow-sm: rgba(0, 0, 0, 0.05);
+  --shadow-md: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+  
+  /* Gradients */
+  --gradient-gold: linear-gradient(135deg, var(--gold-500), var(--gold-300));
+  --gradient-hero: linear-gradient(180deg, var(--navy-900) 0%, var(--navy-800) 100%);
+  --gradient-card: linear-gradient(145deg, rgba(27, 54, 93, 0.4) 0%, rgba(17, 24, 39, 0.8) 100%);
+  
+  /* Typography */
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Spacing */
+  --section-padding: clamp(2rem, 4vw, 3.5rem);
+  --container-width: 1280px;
+  --border-radius: 12px;
+  --border-radius-lg: 20px;
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* ----------------------------------------------------------------------------
+   DARK MODE COLOR TOKENS
+   ---------------------------------------------------------------------------- */
+[data-md-color-scheme="slate"] {
+  /* Text Colors - Soft white, matching index.html dark theme */
+  --text-primary: #F8FAFC;         /* Main body text - WCAG AAA */
+  --text-secondary: #94A3B8;       /* Secondary text - WCAG AA */
+  --text-tertiary: #64748B;        /* Tertiary/muted text - WCAG AA */
+  --text-muted: #757575;           /* Muted text - from index.html */
+  --text-inverse: #1a1a1a;         /* Text on light backgrounds */
+  
+  /* Background Colors - Navy theme - Matching index.html */
+  --bg-primary: var(--primary-navy-dark);    /* primary-navy-dark from index.html */
+  --bg-secondary: var(--primary-navy);       /* primary-navy from index.html */
+  --bg-tertiary: var(--primary-navy-light); /* primary-navy-light from index.html */
+  --bg-elevated: var(--primary-navy);        /* Elevated surfaces */
+  
+  /* Border Colors - Subtle navy - Matching index.html */
+  --border-primary: var(--primary-navy-light);  /* Primary borders - from index.html */
+  --border-secondary: var(--primary-navy);      /* Secondary borders - from index.html */
+  --border-focus: var(--accent-golden);         /* Focus ring (gold) - from index.html */
+  
+  /* Accent Colors - Gold - Matching index.html */
+  --accent-primary: var(--accent-golden);      /* Primary accent (gold) - from index.html */
+  --accent-hover: var(--accent-golden-light);  /* Hover state - lighter gold - from index.html */
+  --accent-active: var(--gold-600);            /* Active state - darker gold */
+  --accent-light: rgba(233, 160, 51, 0.2);      /* Light accent background - matching index.html */
+  
+  /* Link Colors */
+  --link-color: var(--accent-golden);          /* Links - from index.html */
+  --link-hover: var(--accent-golden-light);    /* Link hover - from index.html */
+  --link-visited: var(--gold-500);             /* Visited links */
+  
+  /* Code Colors */
+  --code-bg: var(--navy-800);         /* Code block background */
+  --code-text: #F8FAFC;               /* Code text */
+  --code-border: var(--navy-700);     /* Code block border */
+  --code-inline-bg: var(--navy-800);   /* Inline code background */
+  
+  /* Syntax Highlighting - Adjusted for dark mode */
+  --code-hl-keyword: #a78bfa;         /* Keywords (lighter purple) */
+  --code-hl-string: #34d399;           /* Strings (lighter green) */
+  --code-hl-number: var(--gold-400);  /* Numbers (gold) */
+  --code-hl-function: #60a5fa;        /* Functions (lighter blue) */
+  --code-hl-comment: #94a3b8;         /* Comments (muted) */
+  --code-hl-operator: var(--gold-500); /* Operators (gold) */
+  --code-hl-punctuation: #cbd5e0;      /* Punctuation */
+  
+  /* Callout Colors - Darker backgrounds */
+  --callout-info-bg: #1e3a5f;         /* Info background */
+  --callout-info-border: #60a5fa;     /* Info border */
+  --callout-info-text: #93c5fd;       /* Info text */
+  
+  --callout-warn-bg: rgba(233, 160, 51, 0.2); /* Warning background - accent-golden from index.html */
+  --callout-warn-border: var(--gold-500);      /* Warning border */
+  --callout-warn-text: var(--gold-300);        /* Warning text */
+  
+  --callout-danger-bg: #7f1d1d;       /* Danger background */
+  --callout-danger-border: #f87171;   /* Danger border */
+  --callout-danger-text: #fca5a5;     /* Danger text */
+  
+  --callout-success-bg: #064e3b;      /* Success background */
+  --callout-success-border: #34d399;  /* Success border */
+  --callout-success-text: #6ee7b7;    /* Success text */
+  
+  /* Shadow Colors - Lighter for dark mode */
+  --shadow-sm: rgba(0, 0, 0, 0.3);
+  --shadow-md: rgba(0, 0, 0, 0.5);
+  --shadow-lg: rgba(0, 0, 0, 0.7);
+  
+  /* Gradients */
+  --gradient-gold: linear-gradient(135deg, var(--gold-500), var(--gold-300));
+  --gradient-hero: linear-gradient(180deg, var(--navy-900) 0%, var(--navy-800) 100%);
+  --gradient-card: linear-gradient(145deg, rgba(27, 54, 93, 0.4) 0%, rgba(17, 24, 39, 0.8) 100%);
+  
+  /* Typography */
+  --font-display: 'Outfit', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Spacing */
+  --section-padding: clamp(2rem, 4vw, 3.5rem);
+  --container-width: 1280px;
+  --border-radius: 12px;
+  --border-radius-lg: 20px;
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+}
+
+/* ============================================================================
+   APPLICATION OF COLOR TOKENS
+   ============================================================================ */
+
+/* Base Typography */
+.md-typeset {
+  color: var(--text-primary);
+}
+
+.md-typeset p,
+.md-typeset li {
+  color: var(--text-primary);
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4,
+.md-typeset h5,
+.md-typeset h6 {
+  color: var(--text-primary);
+}
+
+/* Links */
+.md-typeset a {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.md-typeset a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.md-typeset a:visited {
+  color: var(--link-visited);
+}
+
+/* Code Blocks */
+.md-typeset pre {
+  background-color: var(--code-bg) !important;
+  border: 1px solid var(--code-border);
+  color: var(--code-text);
+}
+
+.md-typeset code {
+  background-color: var(--code-inline-bg);
+  color: var(--code-text);
+  padding: 0.125em 0.25em;
+  border-radius: 0.25em;
+}
+
+.md-typeset pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Syntax Highlighting */
+:root {
+  --md-code-hl-number-color: var(--code-hl-number);
+  --md-code-hl-special-color: var(--code-hl-operator);
+  --md-code-hl-function-color: var(--code-hl-function);
+  --md-code-hl-constant-color: var(--code-hl-keyword);
+  --md-code-hl-keyword-color: var(--code-hl-keyword);
+  --md-code-hl-string-color: var(--code-hl-string);
+  --md-code-hl-name-color: var(--code-hl-function);
+  --md-code-hl-operator-color: var(--code-hl-operator);
+  --md-code-hl-punctuation-color: var(--code-hl-punctuation);
+  --md-code-hl-comment-color: var(--code-hl-comment);
+  --md-code-hl-generic-color: var(--code-hl-function);
+}
+
+/* Header & Navigation - Matching index.html */
+/* Override MkDocs Material palette colors to match index.html */
+:root {
+  --md-primary-fg-color: var(--primary-navy);        /* #04233b - primary-navy from index.html */
+  --md-primary-fg-color--light: var(--primary-navy-light);  /* #0a3a5c */
+  --md-primary-fg-color--dark: var(--primary-navy-dark);    /* #021828 */
+  --md-accent-fg-color: var(--accent-golden);        /* #e9a033 - accent-golden from index.html */
+  --md-accent-fg-color--transparent: rgba(233, 160, 51, 0.1);  /* accent-golden with transparency */
+}
+
+.md-header {
+  background-color: var(--primary-navy) !important;  /* primary-navy from index.html */
+  color: #ffffff !important;  /* Always white text in header */
+  border-bottom: none;
+}
+
+/* Header text and links - always light/white (but exclude logo) */
+.md-header__title,
+.md-header__button:not(.md-logo),
+.md-header__topic,
+.md-header__topic:first-child {
+  color: #ffffff !important;
+}
+
+/* Prevent header title from wrapping - keep "RayforceDB VS Code Extension" on one line */
+.md-header__title,
+.md-header__ellipsis,
+.md-header__topic {
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.md-header__button:not(.md-logo):hover {
+  color: var(--accent-golden) !important;  /* Golden hover */
+}
+
+/* Logo - always use light version (logo_light_full.svg) - keep it colorful */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  filter: none !important;  /* Remove any filters to keep logo colorful */
+  color: inherit !important;  /* Don't force color on logo */
+}
+
+[data-md-color-scheme="default"] .md-header__button.md-logo img,
+[data-md-color-scheme="default"] .md-header__button.md-logo svg {
+  filter: none !important;  /* Keep logo colorful in light theme */
+  color: inherit !important;
+}
+
+[data-md-color-scheme="slate"] .md-header__button.md-logo img,
+[data-md-color-scheme="slate"] .md-header__button.md-logo svg {
+  filter: none !important;  /* Keep logo colorful in dark theme */
+  color: inherit !important;
+}
+
+/* Header icons - always white (but exclude logo) */
+.md-header__button:not(.md-logo) svg {
+  color: #ffffff !important;
+}
+
+.md-header__button:not(.md-logo) {
+  color: #ffffff !important;
+}
+
+.md-header__button:not(.md-logo):hover {
+  color: var(--accent-golden) !important;  /* Golden hover */
+  opacity: 1;
+}
+
+.md-tabs {
+  background-color: transparent;
+  border: none;
+  padding: 0.5rem 0;
+  box-shadow: none;
+}
+
+/* Transparent tabs for light mode */
+[data-md-color-scheme="default"] .md-tabs {
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* Hide tabs on home page */
+body:has(.hero-section) .md-tabs {
+  display: none !important;
+}
+
+.md-tabs__link {
+  font-weight: 500;
+  transition: all 0.2s ease;
+  padding: 0.6rem 1.2rem;
+  margin: 0 0.25rem;
+  border-radius: 8px 8px 0 0;
+  display: inline-block;
+}
+
+.md-tabs__link:hover {
+  opacity: 1;
+  background-color: rgba(233, 160, 51, 0.2);  /* accent-golden from index.html */
+}
+
+.md-tabs__link--active {
+  opacity: 1;
+}
+
+/* Bookmark-style tabs for light mode - default (non-home pages) */
+[data-md-color-scheme="default"] .md-tabs__link {
+  color: #4a5568 !important;
+  opacity: 0.9;
+  background-color: transparent;
+}
+
+[data-md-color-scheme="default"] .md-tabs__link:hover {
+  color: #333 !important;  /* text-primary from index.html */
+  opacity: 1;
+  background-color: rgba(233, 160, 51, 0.1);  /* accent-golden from index.html */
+}
+
+/* White tabs only on home page with hero section */
+body:has(.hero-section) [data-md-color-scheme="default"] .md-tabs__link {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+body:has(.hero-section) [data-md-color-scheme="default"] .md-tabs__link:hover {
+  color: rgba(255, 255, 255, 1) !important;
+  background-color: rgba(233, 160, 51, 0.3);  /* accent-golden from index.html */
+}
+
+[data-md-color-scheme="default"] .md-tabs__link--active {
+  background-color: var(--accent-golden);  /* accent-golden from index.html */
+  color: var(--primary-navy) !important;   /* primary-navy from index.html */
+  font-weight: 700;
+  opacity: 1;
+  box-shadow: 0 -2px 8px rgba(233, 160, 51, 0.2);  /* accent-golden from index.html */
+}
+
+/* Bookmark-style tabs for dark mode */
+[data-md-color-scheme="slate"] .md-tabs__link {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-md-color-scheme="slate"] .md-tabs__link:hover {
+  color: var(--accent-golden) !important;  /* accent-golden from index.html */
+  background-color: rgba(233, 160, 51, 0.1);  /* accent-golden from index.html */
+}
+
+[data-md-color-scheme="slate"] .md-tabs__link--active {
+  background-color: rgba(233, 160, 51, 0.2);  /* accent-golden from index.html */
+  color: var(--accent-golden) !important;      /* accent-golden from index.html */
+  font-weight: 700;
+  box-shadow: 0 -2px 8px rgba(233, 160, 51, 0.15);  /* accent-golden from index.html */
+}
+
+/* Search - always light text in header */
+.md-search__input {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff !important;
+}
+
+.md-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Light mode - still white text in header */
+[data-md-color-scheme="default"] .md-search__input {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-md-color-scheme="default"] .md-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Dark mode - white text */
+[data-md-color-scheme="slate"] .md-search__input {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-md-color-scheme="slate"] .md-search__input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* General input fields styling */
+[data-md-color-scheme="default"] input,
+[data-md-color-scheme="default"] textarea,
+[data-md-color-scheme="default"] select {
+  color: #1a1a1a !important;
+}
+
+[data-md-color-scheme="slate"] input,
+[data-md-color-scheme="slate"] textarea,
+[data-md-color-scheme="slate"] select {
+  color: white !important;
+}
+
+/* Navigation */
+.md-nav__link {
+  color: var(--text-secondary);
+}
+
+.md-nav__link:hover {
+  color: var(--accent-primary);
+}
+
+.md-nav__link--active {
+  color: var(--accent-primary);
+  font-weight: 600;
+}
+
+/* Sidebar */
+.md-sidebar {
+  background-color: transparent;
+}
+
+/* Tables - Full width of content area */
+.md-typeset table {
+  display: table;
+  width: 100% !important;
+  max-width: 100% !important;
+  table-layout: auto;
+  border: 1px solid var(--border-primary);
+  border-collapse: collapse;
+  margin: 1rem 0;
+  box-sizing: border-box;
+}
+
+/* Ensure all table variants use full width */
+.md-typeset > table,
+.md-typeset table:not([class]),
+.md-content__inner table,
+.md-typeset .highlight table {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: table;
+}
+
+.md-typeset table th,
+.md-typeset table td {
+  border: 1px solid var(--border-primary);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  word-wrap: break-word;
+}
+
+/* Remove max-width constraints to allow full-width tables */
+.md-content {
+  max-width: 100% !important;
+}
+
+.md-content__inner {
+  max-width: 100% !important;
+}
+
+.md-typeset table th {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.md-typeset table tr:hover {
+  background-color: var(--bg-tertiary);
+}
+
+/* Admonitions (Callouts) */
+.md-typeset .admonition {
+  border-left: 4px solid;
+  box-shadow: 0 2px 4px var(--shadow-sm);
+}
+
+.md-typeset .admonition.info {
+  background-color: var(--callout-info-bg);
+  border-color: var(--callout-info-border);
+}
+
+.md-typeset .admonition.info .admonition-title {
+  background-color: var(--callout-info-border);
+  color: var(--text-inverse);
+}
+
+.md-typeset .admonition.warning {
+  background-color: var(--callout-warn-bg);
+  border-color: var(--callout-warn-border);
+}
+
+.md-typeset .admonition.warning .admonition-title {
+  background-color: var(--callout-warn-border);
+  color: var(--text-inverse);
+}
+
+.md-typeset .admonition.danger {
+  background-color: var(--callout-danger-bg);
+  border-color: var(--callout-danger-border);
+}
+
+.md-typeset .admonition.danger .admonition-title {
+  background-color: var(--callout-danger-border);
+  color: var(--text-inverse);
+}
+
+.md-typeset .admonition.tip,
+.md-typeset .admonition.success {
+  background-color: var(--callout-success-bg);
+  border-color: var(--callout-success-border);
+}
+
+.md-typeset .admonition.tip .admonition-title,
+.md-typeset .admonition.success .admonition-title {
+  background-color: var(--callout-success-border);
+  color: var(--text-inverse);
+}
+
+/* Buttons & Interactive Elements - Matching index.html */
+.md-button {
+  background-color: var(--accent-golden);  /* accent-golden from index.html */
+  color: var(--primary-navy);               /* primary-navy from index.html */
+  border: 1px solid var(--accent-golden);
+  transition: all 0.2s ease;
+}
+
+.md-button:hover {
+  background-color: var(--accent-golden-light);  /* accent-golden-light from index.html */
+  border-color: var(--accent-golden-light);
+}
+
+.md-button--primary {
+  background-color: var(--accent-golden);  /* accent-golden from index.html */
+}
+
+.md-button--primary:hover {
+  background-color: var(--accent-golden-light);  /* accent-golden-light from index.html */
+}
+
+/* Focus States - Accessibility */
+*:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Code Highlighting Background */
+.highlight {
+  background-color: var(--code-bg);
+}
+
+/* ============================================================================
+   UTILITY CLASSES
+   ============================================================================ */
+
+.flex-container {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.text-item {
+  width: 20%;
+  padding-right: 2%;
+}
+
+.player-item {
+  width: 78%;
+}
+
+.ray-dense td,
+.ray-dense th {
+  font-size: 85%;
+  padding: 0 .4em;
+}
+
+.ray-dense th {
+  border-bottom: 1px solid var(--border-primary);
+  opacity: .7;
+  text-align: left;
+}
+
+.ray-dense thead {
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+/* REPL styling */
+.language-clj {
+  font-size: 0.9em;
+}
+
+.asciinema-player,
+.asciinema-player * {
+  font-size: 12px !important;
+  display: block;
+  overflow-x: auto;
+  font-family: 'Roboto Mono', 'Source Code Pro', 'SF Mono', 'SFMono-Regular', ui-monospace, 'DejaVu Sans Mono', 'Menlo',
+    'Consolas', 'Roboto', monospace;
+  white-space-collapse: preserve;
+  text-wrap: nowrap;
+}
+
+/* ============================================================================
+   BENCHMARK VISUAL ELEMENTS
+   ============================================================================ */
+
+/* Benchmark stat cards */
+.benchmark-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.benchmark-stats > div {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.benchmark-stats > div:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(233, 160, 51, 0.2);  /* accent-golden from index.html */
+}
+
+/* Progress bars for performance comparisons */
+.benchmark-progress-bar {
+  background: var(--bg-tertiary);
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.benchmark-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width var(--transition-base);
+  display: flex;
+  align-items: center;
+  padding-left: 0.5rem;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+/* Performance cards */
+.performance-card {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.performance-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.performance-card--highlight {
+  border: 2px solid var(--gold-500);
+  box-shadow: 0 4px 12px rgba(233, 160, 51, 0.15);  /* accent-golden from index.html */
+}
+
+/* Feature cards */
+.feature-card {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border-left: 4px solid var(--gold-500);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.feature-card:hover {
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(233, 160, 51, 0.1);  /* accent-golden from index.html */
+}
