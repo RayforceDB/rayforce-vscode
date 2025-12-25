@@ -14,3 +14,4 @@ Makefile
 package-lock.json
 docs/**
 .github/**
+scripts/

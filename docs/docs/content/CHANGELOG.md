@@ -8,10 +8,11 @@ All notable changes to RayforceDB VS Code Extension will be documented in this f
 
 ## **`0.4.0`**
 
-- Added full Rayfall language support with syntax highlighting and autocomplete
-- Improved REPL integration with environment variable inspection
 - Enhanced instance manager with folder organization for saved instances
+- Fixed deserialization issues with Time Date and Timestamp types in Typescript IPC
+- Improved REPL integration with environment variable inspection
 - Added custom file icons for `.rfl` and `.rf` files
+- Added full Rayfall language support with syntax highlighting and autocomplete
 
 2025-01-XX | **[🔗 VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode)** | **[🔗 GitHub](https://github.com/RayforceDB/rayforce-vscode/releases/tag/0.4.0)**
 
