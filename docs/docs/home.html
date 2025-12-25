@@ -382,10 +382,18 @@
             padding: 5rem 2rem;
             background: var(--bg-white);
             width: 100%;
+            border-top: 1px solid rgba(0, 0, 0, 0.08);
+            margin-top: 2rem;
+        }
+
+        .features:first-of-type {
+            border-top: none;
+            margin-top: 0;
         }
 
         [data-theme="dark"] .features {
             background: #021828;
+            border-top-color: rgba(255, 255, 255, 0.1);
         }
 
         .features-inner {
@@ -507,6 +515,8 @@
             background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
             color: white;
             width: 100%;
+            border-top: 2px solid rgba(233, 160, 51, 0.3);
+            margin-top: 2rem;
         }
 
         .installation-inner {
@@ -679,6 +689,131 @@
             color: #8be9fd;
         }
 
+        /* Footer */
+        .footer {
+            padding: 80px 0 40px;
+            background: var(--primary-navy);
+            color: rgba(255, 255, 255, 0.8);
+            width: 100%;
+            margin-top: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="dark"] .footer {
+            background: #021828;
+        }
+
+        .footer .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 64px;
+            margin-bottom: 48px;
+        }
+
+        @media (max-width: 768px) {
+            .footer-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+        }
+
+        .footer-brand {
+            max-width: 300px;
+        }
+
+        .footer-links {
+            justify-self: end;
+        }
+
+        @media (max-width: 768px) {
+            .footer-links {
+                justify-self: start;
+            }
+        }
+
+        .footer-logo {
+            height: 36px;
+            width: auto;
+            margin-bottom: 16px;
+            filter: brightness(0) invert(1);
+        }
+
+        .footer-brand p {
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        @media (max-width: 600px) {
+            .footer-links {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .footer-column h4 {
+            color: #ffffff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+
+        .footer-column {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .footer-column a {
+            display: block;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 12px;
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+
+        .footer-column a:hover {
+            color: var(--accent-golden);
+        }
+
+        .footer-bottom {
+            padding-top: 32px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .footer-bottom p {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .footer-bottom .partnership {
+            margin-top: 8px;
+        }
+
+        .footer-bottom a {
+            color: var(--accent-golden);
+            text-decoration: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .footer-bottom a:hover {
+            opacity: 0.8;
+        }
+
         /* Responsive */
         @media screen and (max-width: 968px) {
             .hero-container {
@@ -770,28 +905,14 @@
                         <i class="fas fa-server"></i>
                     </div>
                     <h3>Instance Manager</h3>
-                    <p>View and connect to running local and remote RayforceDB instances. Manage multiple connections from the sidebar.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <h3>Process Monitoring</h3>
-                    <p>Real-time CPU and memory usage monitoring for local instances. Keep track of resource consumption at a glance.</p>
+                    <p>View and connect to running local and remote RayforceDB instances. Organise saved connections into folders at the sidebar.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
                         <i class="fas fa-terminal"></i>
                     </div>
                     <h3>Interactive REPL</h3>
-                    <p>Send selected commands directly from opened file to connected instances via an integrated REPL panel.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-code"></i>
-                    </div>
-                    <h3>Syntax Highlighting</h3>
-                    <p>Full syntax highlighting for <code>.rfl</code> and <code>.rf</code> files. Rayfall code has never looked better.</p>
+                    <p>Send prompts and selected file rows directly from opened file to connected instances via an integrated REPL panel.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
@@ -804,77 +925,80 @@
         </div>
     </section>
 
+    <section class="features" id="syntax">
+        <div class="features-inner">
+            <div class="section-header">
+                <h2><strong>Rayfall </strong>language support</h2>
+                <p>Full language support for Rayfall programming language with syntax highlighting, autocomplete, and file icons.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-code"></i>
+                    </div>
+                    <h3>File icons for .rfl files</h3>
+                    <p>Custom icons for <code>.rfl</code> and <code>.rf</code> files to easily identify Rayfall source files in your project.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3>Rayfall Syntax autocomplete</h3>
+                    <p>Intelligent autocomplete with built-in functions, keywords, and types. Get suggestions as you type with full documentation.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>Rayfall syntax highlight</h3>
+                    <p>Full syntax highlighting for <code>.rfl</code> and <code>.rf</code> files. Rayfall code has never looked better.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="installation" id="installation">
         <div class="installation-inner">
             <h2>Get started in <strong>seconds</strong></h2>
-            <div class="install-methods">
-                <div class="install-method">
-                    <h3><i class="fas fa-store"></i> VS Code Marketplace</h3>
-                    <p>The easiest way to install. Search for "Rayforce" in the VS Code extensions panel or click the button below.</p>
-                    <a href="https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode" class="btn btn-primary" target="_blank">
-                        <i class="fas fa-external-link-alt"></i> Open Marketplace
-                    </a>
-                </div>
-                <div class="install-method">
-                    <h3><i class="fas fa-cube"></i> OpenVSX Registry</h3>
-                    <p>For VSCodium, Theia, Gitpod, and other open-source editors compatible with OpenVSX.</p>
-                    <a href="https://open-vsx.org/extension/RayforceDB/rayforce-vscode" class="btn btn-primary" target="_blank">
-                        <i class="fas fa-external-link-alt"></i> Open Registry
-                    </a>
-                </div>
-                <div class="install-method">
-                    <h3><i class="fas fa-keyboard"></i> Quick Open</h3>
-                    <p>Use VS Code Quick Open (Ctrl+P) and paste the following command:</p>
-                    <div class="install-code">
-                        <code>ext install RayforceDB.rayforce-vscode</code>
-                    </div>
-                </div>
-                <div class="install-method">
-                    <h3><i class="fas fa-terminal"></i> Command Line</h3>
-                    <p>Install directly from the terminal using the VS Code CLI:</p>
-                    <div class="install-code">
-                        <code>code --install-extension RayforceDB.rayforce-vscode</code>
-                    </div>
-                </div>
+            <p style="font-size: 1.1rem; margin-bottom: 2rem; opacity: 0.9;">Learn how to install and configure the extension to start developing with RayforceDB.</p>
+            <div style="text-align: center;">
+                <a href="content/get-started/overview.html" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">
+                    <i class="fas fa-rocket"></i> Get Started
+                </a>
             </div>
         </div>
     </section>
 
-    <section class="syntax" id="syntax">
-        <div class="syntax-inner">
-            <div class="section-header">
-                <h2>Beautiful <strong>syntax highlighting</strong></h2>
-                <p>Write Rayfall code with full language support for .rfl and .rf files.</p>
-            </div>
-            <div class="syntax-demo-single">
-                <div class="syntax-card">
-                    <div class="syntax-card-header">
-                        <i class="fas fa-file-code"></i> example.rfl
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="assets/logo_light_full.svg" alt="RayforceDB" class="footer-logo">
+                    <p>High-performance columnar vector database</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Projects</h4>
+                        <a href="https://core.rayforcedb.com/" target="_blank">rayforce</a>
+                        <a href="https://py.rayforcedb.com/" target="_blank">rayforce-py</a>
+                        <a href="https://wasm.rayforcedb.com/" target="_blank">rayforce-wasm</a>
+                        <a href="https://vscode.rayforcedb.com" target="_blank">rayforce-vscode</a>
+                        <a href="https://rs.rayforcedb.com" target="_blank">rayforce-rs</a>
                     </div>
-                    <pre><span class="comment">; Create a table</span>
-(<span class="keyword">set</span> employees (<span class="func">table</span> [name dept salary]
-  (<span class="func">list</span>
-    (<span class="func">list</span> <span class="string">"Alice"</span> <span class="string">"Bob"</span> <span class="string">"Charlie"</span>)
-    [<span class="symbol">'IT</span> <span class="symbol">'HR</span> <span class="symbol">'IT</span>]
-    [<span class="number">75000</span> <span class="number">65000</span> <span class="number">85000</span>])))
-
-<span class="comment">; Query with filtering</span>
-(<span class="keyword">select</span> {
-  name: name
-  salary: salary
-  from: employees
-  where: (<span class="func">></span> salary <span class="number">70000</span>)})
-
-<span class="comment">; Aggregate by department</span>
-(<span class="keyword">select</span> {
-  avg_salary: (<span class="func">avg</span> salary)
-  headcount: (<span class="func">count</span> name)
-  from: employees
-  by: dept})</pre>
+                    <div class="footer-column">
+                        <h4>Community</h4>
+                        <a href="https://github.com/RayforceDB" target="_blank">GitHub</a>
+                        <a href="https://x.com/RayforceDB" target="_blank">X (Twitter)</a>
+                        <a href="https://www.reddit.com/r/rayforcedb/" target="_blank">Reddit</a>
+                        <a href="https://rayforcedb.zulipchat.com/join/l33sichu4vp7nf77hgdul4om/" target="_blank">Zulip Chat</a>
+                    </div>
                 </div>
             </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 RayforceDB. All rights reserved.</p>
+            </div>
         </div>
-    </section>
+    </footer>
 
     <header class="mkdocs-header">
         <div class="mkdocs-header__inner">
