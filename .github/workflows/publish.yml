@@ -33,31 +33,19 @@ jobs:
     - name: Install vsce and ovsx
       run: |
         npm install -g @vscode/vsce
-        npm install -g @openvsx/publish-cli
+        npm install -g ovsx
 
     - name: Package extension
       run: npm run package
       id: package
 
-    - name: Get version from tag or input
+    - name: Get version from tag
       id: version
       run: |
-        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-        else
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Update package.json version
-      if: github.event_name == 'workflow_dispatch'
-      run: |
-        npm version ${{ github.event.inputs.version }} --no-git-tag-version
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add package.json
-        git commit -m "Bump version to ${{ github.event.inputs.version }}" || exit 0
-        git push || exit 0
+        VERSION=${GITHUB_REF#refs/tags/}
+        # Remove 'v' prefix if present
+        VERSION=${VERSION#v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Publish to VS Code Marketplace
       env:
@@ -67,7 +55,7 @@ jobs:
 
     - name: Publish to OpenVSX Registry
       env:
-        OVSX_PAT: ${{ secrets.OVSX_TOKEN }}
+        OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
       run: |
         ovsx publish -p $OVSX_TOKEN
 
