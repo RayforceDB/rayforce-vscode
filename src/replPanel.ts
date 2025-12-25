@@ -68,7 +68,7 @@ export class RayforceReplPanel {
 
         const panel = vscode.window.createWebviewPanel(
             RayforceReplPanel.viewType,
-            'Rayforce REPL',
+            'Rayfall REPL',
             column,
             {
                 enableScripts: true,
@@ -288,7 +288,7 @@ export class RayforceReplPanel {
             for (const item of result) {
                 let name: string | null = null;
                 if (typeof item === 'symbol') {
-                    // Rayforce symbols are JavaScript Symbol primitives
+                    // Rayfall symbols are JavaScript Symbol primitives
                     name = Symbol.keyFor(item) || String(item);
                 } else if (typeof item === 'string') {
                     name = item;
@@ -614,8 +614,8 @@ export class RayforceReplPanel {
     private updateWebview(): void {
         this.panel.webview.html = this.getHtmlContent();
         this.panel.title = this.port
-            ? `Rayforce REPL — localhost:${this.port}`
-            : 'Rayforce REPL — Disconnected';
+            ? `Rayfall REPL — localhost:${this.port}`
+            : 'Rayfall REPL — Disconnected';
     }
 
     private getHtmlContent(): string {
@@ -667,7 +667,7 @@ export class RayforceReplPanel {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rayforce REPL</title>
+    <title>Rayfall REPL</title>
     <style>
         ${getPrettyPrintStyles()}
         
@@ -1216,8 +1216,8 @@ export class RayforceReplPanel {
                     <img src="${logoBlackUri}" class="empty-state-logo logo-light" alt="Rayforce" />
                     <div class="empty-state-text">
                         ${isConnected
-                    ? 'Ready to execute Rayforce commands'
-                    : 'Connect to a Rayforce instance to start'}
+                    ? 'Ready to execute Rayfall commands'
+                    : 'Connect to a RayforceDB instance to start'}
                     </div>
                     
                 </div>

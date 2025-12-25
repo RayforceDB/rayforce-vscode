@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "Rayforce",
-  "scopeName": "source.rayforce",
+  "name": "Rayfall",
+  "scopeName": "source.rayfall",
   "patterns": [
     { "include": "#comment" },
     { "include": "#string" },
@@ -32,28 +32,28 @@
     "comment": {
       "patterns": [
         {
-          "name": "comment.line.semicolon.rayforce",
+          "name": "comment.line.semicolon.rayfall",
           "match": ";.*$"
         }
       ]
     },
     "string": {
-      "name": "string.quoted.double.rayforce",
+      "name": "string.quoted.double.rayfall",
       "begin": "\"",
       "end": "\"",
       "beginCaptures": {
-        "0": { "name": "punctuation.definition.string.begin.rayforce" }
+        "0": { "name": "punctuation.definition.string.begin.rayfall" }
       },
       "endCaptures": {
-        "0": { "name": "punctuation.definition.string.end.rayforce" }
+        "0": { "name": "punctuation.definition.string.end.rayfall" }
       },
       "patterns": [
         {
-          "name": "constant.character.escape.rayforce",
+          "name": "constant.character.escape.rayfall",
           "match": "\\\\(?:[nrt\\\\\"']|[0-7]{3})"
         },
         {
-          "name": "constant.other.placeholder.rayforce",
+          "name": "constant.other.placeholder.rayfall",
           "match": "%"
         }
       ]
@@ -61,7 +61,7 @@
     "quoted-symbol": {
       "patterns": [
         {
-          "name": "constant.other.symbol.quoted.rayforce",
+          "name": "constant.other.symbol.quoted.rayfall",
           "match": "'[a-zA-Z_][a-zA-Z0-9_\\-?!.]*"
         }
       ]
@@ -69,7 +69,7 @@
     "keyword-symbol": {
       "patterns": [
         {
-          "name": "constant.other.keyword.rayforce",
+          "name": "constant.other.keyword.rayfall",
           "match": ":[a-zA-Z_][a-zA-Z0-9_\\-?!]*"
         }
       ]
@@ -77,7 +77,7 @@
     "null-literal": {
       "patterns": [
         {
-          "name": "constant.language.null.rayforce",
+          "name": "constant.language.null.rayfall",
           "match": "\\b0N[0hditplgsfp]\\b|\\b::?\\b|\\bnil\\b"
         }
       ]
@@ -85,51 +85,51 @@
     "infinity-nan": {
       "patterns": [
         {
-          "name": "constant.language.infinity.rayforce",
+          "name": "constant.language.infinity.rayfall",
           "match": "-?0[wW]"
         },
         {
-          "name": "constant.language.nan.rayforce",
+          "name": "constant.language.nan.rayfall",
           "match": "\\b0[nN]\\b"
         }
       ]
     },
     "guid-literal": {
-      "name": "constant.other.guid.rayforce",
+      "name": "constant.other.guid.rayfall",
       "match": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     },
     "timestamp-literal": {
-      "name": "constant.other.timestamp.rayforce",
+      "name": "constant.other.timestamp.rayfall",
       "match": "\\d{4}\\.\\d{2}\\.\\d{2}[DT]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
     },
     "date-literal": {
-      "name": "constant.other.date.rayforce",
+      "name": "constant.other.date.rayfall",
       "match": "\\d{4}\\.\\d{2}\\.\\d{2}(?![DT])"
     },
     "time-literal": {
-      "name": "constant.other.time.rayforce",
+      "name": "constant.other.time.rayfall",
       "match": "-?\\d{1,2}:\\d{2}:\\d{2}(?:\\.\\d+)?"
     },
     "hex-number": {
-      "name": "constant.numeric.hex.rayforce",
+      "name": "constant.numeric.hex.rayfall",
       "match": "0x[0-9a-fA-F]+"
     },
     "float-number": {
-      "name": "constant.numeric.float.rayforce",
+      "name": "constant.numeric.float.rayfall",
       "match": "-?\\d+\\.\\d+(?:[eE][+-]?\\d+)?[fF]?"
     },
     "integer-number": {
-      "name": "constant.numeric.integer.rayforce",
+      "name": "constant.numeric.integer.rayfall",
       "match": "-?\\d+[iIjJhHbBlL]?"
     },
     "char-literal": {
-      "name": "constant.character.rayforce",
+      "name": "constant.character.rayfall",
       "match": "'(?:\\\\[nrt\\\\'0-7]|[^'])'"
     },
     "type-cast": {
       "patterns": [
         {
-          "name": "storage.type.rayforce",
+          "name": "storage.type.rayfall",
           "match": "\\b(Timestamp|String|F64|I64|Bool|Symbol|Time|Date|Guid|Char|I32|F32|U64|U32|I16|U16|I8|U8|B8|C8|List|Table|Dict|Lambda)\\b"
         }
       ]
@@ -139,7 +139,7 @@
         {
           "match": "(?<=\\()\\s*(fn|do|let|if|cond|when|unless|set|try|catch|return|exit|raise|throw|quote|and|or|def|defn|loop|recur)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "keyword.control.rayforce" }
+            "1": { "name": "keyword.control.rayfall" }
           }
         }
       ]
@@ -149,11 +149,11 @@
         {
           "match": "(?<=\\()\\s*(select|update|delete|insert|upsert|alter|modify)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "keyword.other.dml.rayforce" }
+            "1": { "name": "keyword.other.dml.rayfall" }
           }
         },
         {
-          "name": "keyword.other.clause.rayforce",
+          "name": "keyword.other.clause.rayfall",
           "match": "\\b(from|where|by|take|into|as)(?=\\s*:)"
         }
       ]
@@ -164,91 +164,91 @@
           "comment": "Collection functions",
           "match": "(?<=\\()\\s*(list|enlist|table|dict|first|last|count|reverse|distinct|raze|concat|remove|filter|take|drop|til|row|key|value|keys|values|flip|get|at|in|within|sect|except|union|find|group|ungroup|enum|xbar|split|bin|binr)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.collection.rayforce" }
+            "1": { "name": "support.function.collection.rayfall" }
           }
         },
         {
           "comment": "Aggregation functions",
           "match": "(?<=\\()\\s*(sum|avg|med|dev|var|min|max|count|all|any|prod|wavg|wsum|cov|cor|first|last|sums|prds|mins|maxs|avgs|msum|mcount|mavg|mmin|mmax)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.aggregate.rayforce" }
+            "1": { "name": "support.function.aggregate.rayfall" }
           }
         },
         {
           "comment": "Math functions",
           "match": "(?<=\\()\\s*(abs|neg|floor|ceil|round|sqrt|exp|log|sin|cos|tan|asin|acos|atan|signum|mod|div|reciprocal)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.math.rayforce" }
+            "1": { "name": "support.function.math.rayfall" }
           }
         },
         {
           "comment": "Order/Sort functions",
           "match": "(?<=\\()\\s*(asc|desc|iasc|idesc|rank|xasc|xdesc|xrank|sort)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.order.rayforce" }
+            "1": { "name": "support.function.order.rayfall" }
           }
         },
         {
           "comment": "Higher-order functions",
           "match": "(?<=\\()\\s*(apply|map|pmap|fold|scan|map-left|map-right|fold-left|fold-right|scan-left|scan-right|each|peach|over|converge)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.higher-order.rayforce" }
+            "1": { "name": "support.function.higher-order.rayfall" }
           }
         },
         {
           "comment": "Join functions",
           "match": "(?<=\\()\\s*(left-join|inner-join|asof-join|window-join|lj|ij|aj|wj|uj|pj)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.join.rayforce" }
+            "1": { "name": "support.function.join.rayfall" }
           }
         },
         {
           "comment": "IO functions",
           "match": "(?<=\\()\\s*(read|write|read-csv|write-csv|hopen|hclose|load|save|set-splayed|get-splayed|set-parted|get-parted|system)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.io.rayforce" }
+            "1": { "name": "support.function.io.rayfall" }
           }
         },
         {
           "comment": "Type/Meta functions",
           "match": "(?<=\\()\\s*(type|meta|parse|eval|format|show|print|println|ser|de|resolve|nil\\?|null\\?|empty\\?|atom\\?|list\\?)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.meta.rayforce" }
+            "1": { "name": "support.function.meta.rayfall" }
           }
         },
         {
           "comment": "Date/Time functions",
           "match": "(?<=\\()\\s*(date|time|timestamp|guid|year|month|mm|dd|hh|mi|ss|ms)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.datetime.rayforce" }
+            "1": { "name": "support.function.datetime.rayfall" }
           }
         },
         {
           "comment": "String functions",
           "match": "(?<=\\()\\s*(lower|upper|trim|ltrim|rtrim|like|ss|ssr|vs|sv)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.string.rayforce" }
+            "1": { "name": "support.function.string.rayfall" }
           }
         },
         {
           "comment": "Random functions",
           "match": "(?<=\\()\\s*(rand|deal|roll)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.random.rayforce" }
+            "1": { "name": "support.function.random.rayfall" }
           }
         },
         {
           "comment": "System functions",
           "match": "(?<=\\()\\s*(env|gc|args|timer|sysinfo|memstat|timeit|loadfn|internals)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.system.rayforce" }
+            "1": { "name": "support.function.system.rayfall" }
           }
         },
         {
           "comment": "Logic functions",
           "match": "(?<=\\()\\s*(not|unify|diverse)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "support.function.logic.rayforce" }
+            "1": { "name": "support.function.logic.rayfall" }
           }
         }
       ]
@@ -256,7 +256,7 @@
     "builtin-constant": {
       "patterns": [
         {
-          "name": "constant.language.boolean.rayforce",
+          "name": "constant.language.boolean.rayfall",
           "match": "\\b(true|false)\\b"
         }
       ]
@@ -264,15 +264,15 @@
     "special-variable": {
       "patterns": [
         {
-          "name": "variable.language.self.rayforce",
+          "name": "variable.language.self.rayfall",
           "match": "\\bself\\b"
         },
         {
-          "name": "variable.language.it.rayforce",
+          "name": "variable.language.it.rayfall",
           "match": "\\bit\\b"
         },
         {
-          "name": "variable.other.global.rayforce",
+          "name": "variable.other.global.rayfall",
           "match": "\\.[a-zA-Z_][a-zA-Z0-9_\\-?!.]*"
         }
       ]
@@ -282,7 +282,7 @@
         {
           "match": "(?<=\\()\\s*([a-zA-Z_][a-zA-Z0-9_\\-?!]*)(?=\\s|\\)|$)",
           "captures": {
-            "1": { "name": "entity.name.function.rayforce" }
+            "1": { "name": "entity.name.function.rayfall" }
           }
         }
       ]
@@ -290,7 +290,7 @@
     "symbol-reference": {
       "patterns": [
         {
-          "name": "variable.other.rayforce",
+          "name": "variable.other.rayfall",
           "match": "\\b[a-zA-Z_][a-zA-Z0-9_\\-?!]*\\b"
         }
       ]
@@ -298,51 +298,51 @@
     "operator": {
       "patterns": [
         {
-          "name": "keyword.operator.comparison.rayforce",
+          "name": "keyword.operator.comparison.rayfall",
           "match": "==|!=|<>|<=|>=|<|>"
         },
         {
-          "name": "keyword.operator.arithmetic.rayforce",
+          "name": "keyword.operator.arithmetic.rayfall",
           "match": "[+\\-*/%]"
         },
         {
-          "name": "keyword.operator.logical.rayforce",
+          "name": "keyword.operator.logical.rayfall",
           "match": "[&|!~^]"
         },
         {
-          "name": "keyword.operator.assignment.rayforce",
+          "name": "keyword.operator.assignment.rayfall",
           "match": ":"
         },
         {
-          "name": "keyword.operator.dict.rayforce",
+          "name": "keyword.operator.dict.rayfall",
           "match": "!"
         },
         {
-          "name": "keyword.operator.apply.rayforce",
+          "name": "keyword.operator.apply.rayfall",
           "match": "@"
         },
         {
-          "name": "keyword.operator.compose.rayforce",
+          "name": "keyword.operator.compose.rayfall",
           "match": "\\."
         },
         {
-          "name": "keyword.operator.project.rayforce",
+          "name": "keyword.operator.project.rayfall",
           "match": "#"
         },
         {
-          "name": "keyword.operator.question.rayforce",
+          "name": "keyword.operator.question.rayfall",
           "match": "\\?"
         },
         {
-          "name": "keyword.operator.each.rayforce",
+          "name": "keyword.operator.each.rayfall",
           "match": "'"
         },
         {
-          "name": "keyword.operator.underscore.rayforce",
+          "name": "keyword.operator.underscore.rayfall",
           "match": "_"
         },
         {
-          "name": "keyword.operator.dollar.rayforce",
+          "name": "keyword.operator.dollar.rayfall",
           "match": "\\$"
         }
       ]
@@ -350,31 +350,31 @@
     "punctuation": {
       "patterns": [
         {
-          "name": "punctuation.section.parens.begin.rayforce",
+          "name": "punctuation.section.parens.begin.rayfall",
           "match": "\\("
         },
         {
-          "name": "punctuation.section.parens.end.rayforce",
+          "name": "punctuation.section.parens.end.rayfall",
           "match": "\\)"
         },
         {
-          "name": "punctuation.section.brackets.begin.rayforce",
+          "name": "punctuation.section.brackets.begin.rayfall",
           "match": "\\["
         },
         {
-          "name": "punctuation.section.brackets.end.rayforce",
+          "name": "punctuation.section.brackets.end.rayfall",
           "match": "\\]"
         },
         {
-          "name": "punctuation.section.braces.begin.rayforce",
+          "name": "punctuation.section.braces.begin.rayfall",
           "match": "\\{"
         },
         {
-          "name": "punctuation.section.braces.end.rayforce",
+          "name": "punctuation.section.braces.end.rayfall",
           "match": "\\}"
         },
         {
-          "name": "punctuation.separator.rayforce",
+          "name": "punctuation.separator.rayfall",
           "match": "[;,]"
         }
       ]

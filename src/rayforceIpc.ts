@@ -802,7 +802,7 @@ export class RayforceIpcClient {
 // ============================================================================
 
 /**
- * Format a Rayforce value for display (mimics native Rayforce REPL)
+ * Format a Rayfall value for display (mimics native Rayfall REPL)
  */
 export function formatValue(value: RayforceValue): string {
     if (value === null) {
@@ -866,7 +866,7 @@ export function formatValue(value: RayforceValue): string {
 }
 
 /**
- * Format a table with box-drawing characters (like native Rayforce REPL)
+ * Format a table with box-drawing characters (like native Rayfall REPL)
  */
 function formatTable(table: RayforceTable): string {
     const columns = table.columns;

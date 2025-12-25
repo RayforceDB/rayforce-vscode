@@ -4,7 +4,7 @@ View and connect to running local and remote instances, monitor CPU and memory u
 
 <img src="assets/demo.png" alt="Demo" width="1080">
 
-<h3>🎨 As a bonus, full syntax highlighting for <code>.rfl</code> and <code>.rf</code> files</h3>
+<h3>🎨 As a bonus, full syntax highlighting for Rayfall language files (<code>.rfl</code> and <code>.rf</code>)</h3>
 
 <h2>Installation</h2>
 

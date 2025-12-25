@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-// Rayforce built-in definitions extracted from core/env.c
+// Rayfall built-in definitions extracted from core/env.c
 export interface RayforceSymbol {
     name: string;
     kind: 'keyword' | 'function' | 'type' | 'constant';
@@ -255,7 +255,7 @@ export class RayforceCompletionProvider implements vscode.CompletionItemProvider
             const item = new vscode.CompletionItem(symbol.name, getCompletionItemKind(symbol.kind));
             item.detail = symbol.detail;
             if (symbol.documentation) {
-                item.documentation = new vscode.MarkdownString(`\`\`\`rayforce\n${symbol.documentation}\n\`\`\``);
+                item.documentation = new vscode.MarkdownString(`\`\`\`rayfall\n${symbol.documentation}\n\`\`\``);
             }
             // Sort order: keywords first, then functions, then types
             item.sortText = symbol.kind === 'keyword' ? `0_${symbol.name}` :

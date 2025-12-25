@@ -29,15 +29,15 @@
   ],
   "main": "./out/extension.js",
   "activationEvents": [
-    "onLanguage:rayforce",
+    "onLanguage:rayfall",
     "onView:rayforceInstances",
     "onView:rayforceSavedInstances"
   ],
   "contributes": {
     "languages": [
       {
-        "id": "rayforce",
-        "aliases": ["Rayforce", "rayforce"],
+        "id": "rayfall",
+        "aliases": ["Rayfall", "rayfall"],
         "extensions": [".rfl", ".rf"],
         "configuration": "./language-configuration.json",
         "icon": {
@@ -64,9 +64,9 @@
     ],
     "grammars": [
       {
-        "language": "rayforce",
-        "scopeName": "source.rayforce",
-        "path": "./syntaxes/rayforce.tmLanguage.json"
+        "language": "rayfall",
+        "scopeName": "source.rayfall",
+        "path": "./syntaxes/rayfall.tmLanguage.json"
       }
     ],
     "viewsContainers": {
@@ -174,14 +174,14 @@
         "command": "rayforce.executeSelection",
         "key": "ctrl+enter",
         "mac": "cmd+enter",
-        "when": "editorTextFocus && editorLangId == rayforce"
+        "when": "editorTextFocus && editorLangId == rayfall"
       }
     ],
     "menus": {
       "editor/context": [
         {
           "command": "rayforce.executeSelection",
-          "when": "editorLangId == rayforce",
+          "when": "editorLangId == rayfall",
           "group": "navigation"
         }
       ],
