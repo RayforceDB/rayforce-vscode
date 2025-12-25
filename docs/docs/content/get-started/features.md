@@ -1,4 +1,0 @@
-# Features
-
-<!-- TODO: Add content -->
-

@@ -1,4 +1,0 @@
-# Installation
-
-<!-- TODO: Add content -->
-

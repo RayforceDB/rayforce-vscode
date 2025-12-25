@@ -101,18 +101,11 @@ extra_css:
 
 nav:
   - Home: index.html
-  - Get Started:
-    - Overview: content/get-started/overview.md
-    - Installation: content/get-started/installation.md
-    - Features: content/get-started/features.md
-  - Documentation:
-    - Overview: content/documentation/overview.md
-    - Usage:
-      - Overview: content/documentation/usage/overview.md
-      - Instances: content/documentation/usage/instances.md
-      - REPL: content/documentation/usage/repl.md
-      - Monitoring: content/documentation/usage/monitoring.md
-    - Syntax Highlighting:
-      - Overview: content/documentation/syntax/overview.md
+  - Features:
+    - Overview: content/features/overview.md
+    - REPL: content/features/repl.md
+    - Instance Manager: content/features/instance-manager.md
+    - Appearance: content/features/appearance.md
+  - Installation: content/installation.md
+  - Changelog: content/CHANGELOG.md
   - License: content/license.md
-

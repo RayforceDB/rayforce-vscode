@@ -626,22 +626,48 @@ body:has(.hero-section) [data-md-color-scheme="default"] .md-tabs__link:hover {
 /* Buttons & Interactive Elements - Matching index.html */
 .md-button {
   background-color: var(--accent-golden);  /* accent-golden from index.html */
-  color: var(--primary-navy);               /* primary-navy from index.html */
+  color: var(--primary-navy) !important;   /* primary-navy from index.html - force dark text */
   border: 1px solid var(--accent-golden);
   transition: all 0.2s ease;
+  font-weight: 600;
 }
 
 .md-button:hover {
   background-color: var(--accent-golden-light);  /* accent-golden-light from index.html */
   border-color: var(--accent-golden-light);
+  color: var(--primary-navy) !important;  /* Keep dark text on hover */
 }
 
 .md-button--primary {
   background-color: var(--accent-golden);  /* accent-golden from index.html */
+  color: var(--primary-navy) !important;   /* Force dark text */
 }
 
 .md-button--primary:hover {
   background-color: var(--accent-golden-light);  /* accent-golden-light from index.html */
+  color: var(--primary-navy) !important;  /* Keep dark text on hover */
+}
+
+/* Ensure button text is always dark on light background */
+[data-md-color-scheme="default"] .md-button,
+[data-md-color-scheme="default"] .md-button--primary {
+  color: var(--primary-navy) !important;
+}
+
+[data-md-color-scheme="default"] .md-button:hover,
+[data-md-color-scheme="default"] .md-button--primary:hover {
+  color: var(--primary-navy) !important;
+}
+
+/* Dark theme - keep dark text on gold background */
+[data-md-color-scheme="slate"] .md-button,
+[data-md-color-scheme="slate"] .md-button--primary {
+  color: var(--primary-navy) !important;
+}
+
+[data-md-color-scheme="slate"] .md-button:hover,
+[data-md-color-scheme="slate"] .md-button--primary:hover {
+  color: var(--primary-navy) !important;
 }
 
 /* Focus States - Accessibility */
