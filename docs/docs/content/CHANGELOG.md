@@ -14,5 +14,5 @@ All notable changes to RayforceDB VS Code Extension will be documented in this f
 - Added custom file icons for `.rfl` and `.rf` files
 - Added full Rayfall language support with syntax highlighting and autocomplete
 
-2025-01-XX | **[🔗 VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode)** | **[🔗 GitHub](https://github.com/RayforceDB/rayforce-vscode/releases/tag/0.4.0)**
+2025-01-25 | **[🔗 VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode)** | **[🔗 GitHub](https://github.com/RayforceDB/rayforce-vscode/releases/tag/0.4.0)**
 

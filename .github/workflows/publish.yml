@@ -61,15 +61,15 @@ jobs:
 
     - name: Publish to VS Code Marketplace
       env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        VSCE_TOKEN: ${{ secrets.VSCE_TOKEN }}
       run: |
-        vsce publish -p $VSCE_PAT
+        vsce publish -p $VSCE_TOKEN
 
     - name: Publish to OpenVSX Registry
       env:
-        OVSX_PAT: ${{ secrets.OPENVSX_TOKEN }}
+        OVSX_PAT: ${{ secrets.OVSX_TOKEN }}
       run: |
-        ovsx publish -p $OVSX_PAT
+        ovsx publish -p $OVSX_TOKEN
 
     - name: Upload VSIX artifact
       uses: actions/upload-artifact@v4

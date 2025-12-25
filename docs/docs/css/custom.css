@@ -805,3 +805,28 @@ body:has(.hero-section) [data-md-color-scheme="default"] .md-tabs__link:hover {
   transform: translateX(4px);
   box-shadow: 0 4px 12px rgba(233, 160, 51, 0.1);  /* accent-golden from index.html */
 }
+
+/* Logo theme switching */
+.logo-light-only {
+  display: inline-block !important;
+}
+
+.logo-dark-only {
+  display: none !important;
+}
+
+[data-md-color-scheme="slate"] .logo-light-only {
+  display: none !important;
+}
+
+[data-md-color-scheme="slate"] .logo-dark-only {
+  display: inline-block !important;
+}
+
+/* Ensure logos in headings align properly */
+.md-typeset h2 img,
+.md-typeset h3 img {
+  vertical-align: middle;
+  display: inline-block;
+  line-height: 1;
+}
