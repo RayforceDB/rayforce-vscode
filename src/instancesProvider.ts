@@ -38,6 +38,8 @@ export class RayforceInstanceItem extends vscode.TreeItem {
                 `**Command:** \`${process.command} ${process.args}\`\n\n` +
                 `---\n_Click to reconnect or use context menu_`
             );
+            // Make connected instance more prominent
+            this.resourceUri = vscode.Uri.parse(`rayforce://connected/${process.port}`);
         } else {
             this.description = `PID ${process.pid}`;
             this.iconPath = new vscode.ThemeIcon('vm-outline');
@@ -136,34 +138,26 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
 
         const items: InstanceItem[] = [];
 
-        // Local processes
+        // Check actual connection status from REPL panel
+        const isActuallyConnected = !this.isRemoteConnection && 
+            this.connectedPid !== null && 
+            this.connectedPort !== null;
+
+        // Local processes only
         const processes = await this.findRayforceProcesses();
         for (const proc of processes.sort((a, b) => a.port - b.port)) {
+            // Only mark as connected if REPL is actually connected to this instance
+            const isConnected = isActuallyConnected && 
+                this.connectedPid === proc.pid && 
+                this.connectedPort === proc.port;
             items.push(new RayforceInstanceItem(
                 proc,
-                vscode.TreeItemCollapsibleState.None,
-                !this.isRemoteConnection && this.connectedPid === proc.pid
-            ));
-        }
-
-        // Saved remote connections
-        const remotes = this.getSavedRemotes();
-        for (const remote of remotes.sort((a, b) => a.port - b.port)) {
-            const isConnected = this.isRemoteConnection && 
-                this.connectedHost === remote.host && 
-                this.connectedPort === remote.port;
-            items.push(new RemoteInstanceItem(
-                remote,
                 vscode.TreeItemCollapsibleState.None,
                 isConnected
             ));
         }
 
         return items;
-    }
-
-    getSavedRemotes(): RemoteConnection[] {
-        return this.context.globalState.get<RemoteConnection[]>('rayforce.remoteConnections', []);
     }
 
     async getAvailableInstances(): Promise<{ label: string; host: string; port: number; isRemote: boolean }[]> {
@@ -179,36 +173,10 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
             });
         }
         
-        const remotes = this.getSavedRemotes();
-        for (const remote of remotes.sort((a, b) => a.port - b.port)) {
-            instances.push({
-                label: `${remote.host}:${remote.port} (remote)`,
-                host: remote.host,
-                port: remote.port,
-                isRemote: true
-            });
-        }
-        
         return instances;
     }
 
-    async addRemoteConnection(host: string, port: number): Promise<void> {
-        const remotes = this.getSavedRemotes();
-        if (!remotes.find(r => r.host === host && r.port === port)) {
-            remotes.push({ host, port });
-            await this.context.globalState.update('rayforce.remoteConnections', remotes);
-            this.refresh();
-        }
-    }
-
-    async removeRemoteConnection(host: string, port: number): Promise<void> {
-        const remotes = this.getSavedRemotes();
-        const filtered = remotes.filter(r => !(r.host === host && r.port === port));
-        await this.context.globalState.update('rayforce.remoteConnections', filtered);
-        this.refresh();
-    }
-
-    private async findRayforceProcesses(): Promise<RayforceProcess[]> {
+    async findRayforceProcesses(): Promise<RayforceProcess[]> {
         return new Promise((resolve) => {
             // Use grep to only get rayforce processes directly
             cp.exec('ps aux | grep -E "[r]ayforce.*-p"', (error, stdout) => {
@@ -346,6 +314,25 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
     isConnectedRemote(): boolean {
         return this.isRemoteConnection;
         }
+
+    setConnectionState(host: string | null, port: number | null, isRemote: boolean): void {
+        this.connectedHost = host;
+        this.connectedPort = port;
+        this.isRemoteConnection = isRemote;
+        if (host && port) {
+            if (isRemote) {
+                this.statusBarItem.text = `$(remote) Rayforce: ${host}:${port}`;
+                this.statusBarItem.tooltip = `Connected to remote ${host}:${port}\nClick to open REPL`;
+            } else {
+                this.statusBarItem.text = `$(vm-running) Rayforce: ${host}:${port}`;
+                this.statusBarItem.tooltip = `Connected to ${host}:${port}\nClick to open REPL`;
+            }
+            this.statusBarItem.show();
+        } else {
+            this.statusBarItem.hide();
+        }
+        this.refresh();
+    }
 
     async terminateConnectedProcess(): Promise<boolean> {
         console.log('[Instances] terminateConnectedProcess called, PID:', this.connectedPid, 'isRemote:', this.isRemoteConnection);

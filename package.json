@@ -30,7 +30,8 @@
   "main": "./out/extension.js",
   "activationEvents": [
     "onLanguage:rayforce",
-    "onView:rayforceInstances"
+    "onView:rayforceInstances",
+    "onView:rayforceSavedInstances"
   ],
   "contributes": {
     "languages": [
@@ -38,7 +39,27 @@
         "id": "rayforce",
         "aliases": ["Rayforce", "rayforce"],
         "extensions": [".rfl", ".rf"],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./assets/icon-light.svg",
+          "dark": "./assets/icon-dark.svg"
+        }
+      }
+    ],
+    "fileAssociations": [
+      {
+        "pattern": "*.rf",
+        "icon": {
+          "light": "./assets/icon-light.svg",
+          "dark": "./assets/icon-dark.svg"
+        }
+      },
+      {
+        "pattern": "*.rfl",
+        "icon": {
+          "light": "./assets/icon-light.svg",
+          "dark": "./assets/icon-dark.svg"
+        }
       }
     ],
     "grammars": [
@@ -64,6 +85,10 @@
           "name": "Instances"
         },
         {
+          "id": "rayforceSavedInstances",
+          "name": "Saved Instances"
+        },
+        {
           "type": "webview",
           "id": "rayforceProcessInfo",
           "name": "Process Info"
@@ -84,22 +109,46 @@
         "icon": "$(plug)"
       },
       {
-        "command": "rayforce.connectToRemote",
-        "title": "Connect to Remote",
+        "command": "rayforce.connectToSavedInstance",
+        "title": "Connect",
         "category": "Rayforce",
         "icon": "$(plug)"
       },
       {
-        "command": "rayforce.addRemote",
-        "title": "Add Remote",
+        "command": "rayforce.addSavedInstance",
+        "title": "Add Instance",
         "category": "Rayforce",
         "icon": "$(add)"
       },
       {
-        "command": "rayforce.removeRemote",
-        "title": "Remove Remote",
+        "command": "rayforce.removeSavedInstance",
+        "title": "Remove Instance",
         "category": "Rayforce",
         "icon": "$(trash)"
+      },
+      {
+        "command": "rayforce.createFolder",
+        "title": "Create Folder",
+        "category": "Rayforce",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "rayforce.renameFolder",
+        "title": "Rename Folder",
+        "category": "Rayforce",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "rayforce.deleteFolder",
+        "title": "Delete Folder",
+        "category": "Rayforce",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "rayforce.saveInstanceToFolder",
+        "title": "Save Instance",
+        "category": "Rayforce",
+        "icon": "$(vm)"
       },
       {
         "command": "rayforce.disconnectFromInstance",
@@ -138,71 +187,76 @@
       ],
       "view/title": [
         {
-          "command": "rayforce.addRemote",
-          "when": "view == rayforceInstances",
-          "group": "navigation"
-        },
-        {
-          "command": "rayforce.openRepl",
-          "when": "view == rayforceInstances",
-          "group": "navigation"
-        },
-        {
           "command": "rayforce.refreshInstances",
           "when": "view == rayforceInstances",
+          "group": "navigation"
+        },
+        {
+          "command": "rayforce.addSavedInstance",
+          "when": "view == rayforceSavedInstances",
+          "group": "navigation"
+        },
+        {
+          "command": "rayforce.createFolder",
+          "when": "view == rayforceSavedInstances",
           "group": "navigation"
         }
       ],
       "view/item/context": [
-        {
-          "command": "rayforce.openRepl",
-          "when": "view == rayforceInstances && viewItem == rayforceInstance",
-          "group": "inline"
-        },
         {
           "command": "rayforce.connectToInstance",
           "when": "view == rayforceInstances && viewItem == rayforceInstance",
           "group": "inline"
         },
         {
-          "command": "rayforce.openRepl",
-          "when": "view == rayforceInstances && viewItem == rayforceInstanceConnected",
-          "group": "inline"
-        },
-        {
           "command": "rayforce.disconnectFromInstance",
           "when": "view == rayforceInstances && viewItem == rayforceInstanceConnected",
           "group": "inline"
         },
         {
-          "command": "rayforce.openRepl",
-          "when": "view == rayforceInstances && viewItem == rayforceRemote",
+          "command": "rayforce.connectToSavedInstance",
+          "when": "view == rayforceSavedInstances && viewItem == savedInstance",
           "group": "inline"
         },
         {
-          "command": "rayforce.connectToRemote",
-          "when": "view == rayforceInstances && viewItem == rayforceRemote",
-          "group": "inline"
-        },
-        {
-          "command": "rayforce.removeRemote",
-          "when": "view == rayforceInstances && viewItem == rayforceRemote",
-          "group": "inline"
-        },
-        {
-          "command": "rayforce.openRepl",
-          "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
+          "command": "rayforce.removeSavedInstance",
+          "when": "view == rayforceSavedInstances && viewItem == savedInstance",
           "group": "inline"
         },
         {
           "command": "rayforce.disconnectFromInstance",
-          "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
+          "when": "view == rayforceSavedInstances && viewItem == savedInstanceConnected",
           "group": "inline"
         },
         {
-          "command": "rayforce.removeRemote",
-          "when": "view == rayforceInstances && viewItem == rayforceRemoteConnected",
+          "command": "rayforce.saveInstanceToFolder",
+          "when": "view == rayforceSavedInstances && viewItem == savedInstanceConnected",
           "group": "inline"
+        },
+        {
+          "command": "rayforce.removeSavedInstance",
+          "when": "view == rayforceSavedInstances && viewItem == savedInstanceConnected",
+          "group": "inline"
+        },
+        {
+          "command": "rayforce.createFolder",
+          "when": "view == rayforceSavedInstances && viewItem == savedFolder",
+          "group": "1_actions"
+        },
+        {
+          "command": "rayforce.saveInstanceToFolder",
+          "when": "view == rayforceSavedInstances && viewItem == savedFolder",
+          "group": "2_actions"
+        },
+        {
+          "command": "rayforce.renameFolder",
+          "when": "view == rayforceSavedInstances && viewItem == savedFolder",
+          "group": "3_actions"
+        },
+        {
+          "command": "rayforce.deleteFolder",
+          "when": "view == rayforceSavedInstances && viewItem == savedFolder",
+          "group": "4_actions"
         }
       ]
     }

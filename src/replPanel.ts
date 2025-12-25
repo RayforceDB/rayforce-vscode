@@ -52,11 +52,14 @@ export class RayforceReplPanel {
             this.disposables
         );
 
+        // Icon is set with light/dark variants, so VS Code handles theme changes automatically
+
         this.updateWebview();
     }
 
+
     public static createOrShow(extensionUri: vscode.Uri): RayforceReplPanel {
-        const column = vscode.ViewColumn.Beside;
+        const column = vscode.ViewColumn.Active;
 
         if (RayforceReplPanel.currentPanel) {
             RayforceReplPanel.currentPanel.panel.reveal(column);
@@ -73,6 +76,12 @@ export class RayforceReplPanel {
                 localResourceRoots: [extensionUri]
             }
         );
+
+        // Set icon with light/dark variants - VS Code will automatically choose based on theme
+        panel.iconPath = {
+            light: vscode.Uri.joinPath(extensionUri, 'assets', 'icon-light.svg'),
+            dark: vscode.Uri.joinPath(extensionUri, 'assets', 'icon-dark.svg')
+        };
 
         RayforceReplPanel.currentPanel = new RayforceReplPanel(panel, extensionUri);
         return RayforceReplPanel.currentPanel;
@@ -156,6 +165,10 @@ export class RayforceReplPanel {
 
     public getPort(): number | null {
         return this.port;
+    }
+
+    public getHost(): string | null {
+        return this.host;
     }
 
     public async execute(command: string): Promise<void> {
