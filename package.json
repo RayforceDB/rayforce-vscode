@@ -265,6 +265,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test:ipc": "node scripts/test-ipc.js",
     "package": "vsce package"
   },
   "devDependencies": {

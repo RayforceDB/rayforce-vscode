@@ -3,7 +3,7 @@
  * Renders Rayforce types as beautiful HTML for the REPL webview
  */
 
-import { RayforceValue, RayforceTable, RayforceDict, RayforceError, RayforceDate, RayforceTime, RayforceTimestamp } from './rayforceIpc';
+import { RayforceValue, RayforceTable, RayforceDict, RayforceError, RayforceFunction, RayforceDate, RayforceTime, RayforceTimestamp } from './rayforceIpc';
 
 // ============================================================================
 // Configuration
@@ -38,9 +38,9 @@ const DEFAULT_CONFIG: PrettyPrintConfig = {
 // Type Detection
 // ============================================================================
 
-export type RayforceTypeName = 
-    | 'Null' | 'B8' | 'U8' | 'I16' | 'I32' | 'I64' | 'F64'
-    | 'C8' | 'Symbol' | 'Date' | 'Time' | 'Timestamp' | 'GUID'
+export type RayforceTypeName =
+    | 'Null' | 'B8' | 'U8' | 'I16' | 'I32' | 'I64' | 'F32' | 'F64'
+    | 'String' | 'Symbol' | 'Date' | 'Time' | 'Timestamp' | 'GUID'
     | 'List' | 'Dict' | 'Table' | 'Error' | 'Lambda' | 'Unknown';
 
 export function detectType(value: RayforceValue): RayforceTypeName {
@@ -51,7 +51,7 @@ export function detectType(value: RayforceValue): RayforceTypeName {
         if (Number.isInteger(value)) return 'I32';
         return 'F64';
     }
-    if (typeof value === 'string') return 'C8';
+    if (typeof value === 'string') return 'String';
     if (typeof value === 'symbol') return 'Symbol';
     if (value instanceof Date) return 'Timestamp';
     if (Array.isArray(value)) {
@@ -62,6 +62,7 @@ export function detectType(value: RayforceValue): RayforceTypeName {
         if (value._type === 'table') return 'Table';
         if (value._type === 'dict') return 'Dict';
         if (value._type === 'error') return 'Error';
+        if (value._type === 'function') return 'Lambda';
         if (value._type === 'date') return 'Date';
         if (value._type === 'time') return 'Time';
         if (value._type === 'timestamp') return 'Timestamp';
@@ -314,6 +315,9 @@ function formatValueInner(value: RayforceValue, config: PrettyPrintConfig, depth
     if (typeof value === 'object' && '_type' in value) {
         if (value._type === 'error') {
             return formatError(value as RayforceError);
+        }
+        if (value._type === 'function') {
+            return formatFunction(value as RayforceFunction, config, depth);
         }
         if (value._type === 'table') {
             return formatTableHtml(value as RayforceTable, config, pagination);
@@ -594,16 +598,22 @@ function formatArray(arr: RayforceValue[], config: PrettyPrintConfig, depth: num
 }
 
 function formatError(error: RayforceError): string {
-    const codeNames: { [key: number]: string } = {
-        1: 'INIT', 2: 'PARSE', 3: 'EVAL', 4: 'FORMAT', 5: 'TYPE',
-        6: 'LENGTH', 7: 'ARITY', 8: 'INDEX', 9: 'HEAP', 10: 'IO',
-        11: 'SYS', 12: 'OS', 13: 'NOT_FOUND', 14: 'NOT_EXIST',
-        15: 'NOT_IMPL', 16: 'NOT_SUPPORTED'
-    };
-    
-    const codeName = codeNames[error.code] || `E${error.code}`;
-    
-    return `<span class="rf-error"><span class="rf-error-code">${codeName}</span>${escapeHtml(error.message)}</span>`;
+    const codeName = (error.code || 'error').toUpperCase();
+    // v3 puts only the packed code on the wire; skip the message when it
+    // just repeats the code
+    const detail = error.message && error.message !== error.code ? escapeHtml(error.message) : '';
+
+    return `<span class="rf-error"><span class="rf-error-code">${escapeHtml(codeName)}</span>${detail}</span>`;
+}
+
+function formatFunction(fn: RayforceFunction, config: PrettyPrintConfig, depth: number): string {
+    if (fn.name) {
+        return `<span class="rf-lambda">${escapeHtml(fn.name)}</span>`;
+    }
+    const params = Array.isArray(fn.params)
+        ? formatValueInner(fn.params, config, depth + 1)
+        : '';
+    return `<span class="rf-lambda">fn</span>${params}`;
 }
 
 function formatDictHtml(dict: RayforceDict, config: PrettyPrintConfig, depth: number): string {
@@ -815,6 +825,10 @@ export function formatValueText(value: RayforceValue, config: PrettyPrintConfig 
     }
     if (typeof value === 'object' && '_type' in value) {
         if (value._type === 'error') return `'${(value as RayforceError).message}`;
+        if (value._type === 'function') {
+            const fn = value as RayforceFunction;
+            return fn.name || 'fn';
+        }
         if (value._type === 'table') return formatTableText(value as RayforceTable, config);
         if (value._type === 'dict') {
             const dict = value as RayforceDict;
