@@ -613,8 +613,8 @@ export class RayforceReplPanel {
 
     private updateWebview(): void {
         this.panel.webview.html = this.getHtmlContent();
-        this.panel.title = this.port
-            ? `Rayfall REPL — localhost:${this.port}`
+        this.panel.title = this.host && this.port
+            ? `Rayfall REPL — ${this.host}:${this.port}`
             : 'Rayfall REPL — Disconnected';
     }
 
@@ -1198,7 +1198,7 @@ export class RayforceReplPanel {
         <div class="header">
             <div class="status">
                 <div class="status-indicator"></div>
-                <span class="status-text">${isConnected ? `localhost:${this.port}` : 'Disconnected'}</span>
+                <span class="status-text">${isConnected ? this.escapeHtml(`${this.host}:${this.port}`) : 'Disconnected'}</span>
             </div>
             <div class="header-actions">
                 <button class="header-btn ${this.showEnv ? 'active' : ''}" onclick="toggleEnv()" title="Toggle Environment Panel">
