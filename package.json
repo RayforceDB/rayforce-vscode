@@ -266,6 +266,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test:ipc": "node scripts/test-ipc.js",
+    "test:format": "node scripts/test-format.js",
     "package": "vsce package"
   },
   "devDependencies": {
