@@ -172,7 +172,7 @@ class Serializer {
 const RAYFORCE_EPOCH_YEAR = 2000;
 const UT_EPOCH_SHIFT_MS = 946684800 * 1000; // milliseconds from Unix epoch (1970-01-01) to Rayforce epoch (2000-01-01)
 const MSECS_IN_DAY = 24 * 60 * 60 * 1000;
-const NSECS_IN_DAY = 24 * 60 * 60 * 1000000000;
+const NSECS_IN_DAY = BigInt(24 * 60 * 60) * BigInt(1000000000);
 
 // NULL value constants (from rayforce.h)
 const NULL_I32 = -2147483648; // 0x80000000
@@ -1002,26 +1002,46 @@ function formatTime(time: RayforceTime): string {
 }
 
 /**
+ * Format a timestamp value (i64 nanoseconds since 2000-01-01) as
+ * YYYY.MM.DDDHH:MM:SS.nnnnnnnnn, exactly like the native REPL
+ * (ts_to_parts in format.c).
+ *
+ * The day/intra-day split must be floored, not truncated: BigInt `/` and
+ * `%` truncate toward zero, so for pre-2000 (negative) values a plain
+ * split lands on the wrong day and yields a negative nanosecond remainder
+ * (rendered as garbage like "2000.01.01D00:00:00.0000000-1").
+ */
+export function formatTimestampString(nanoseconds: bigint): string {
+    let days = nanoseconds / NSECS_IN_DAY;
+    let span = nanoseconds % NSECS_IN_DAY;
+    if (span < BigInt(0)) {
+        days -= BigInt(1);
+        span += NSECS_IN_DAY;
+    }
+
+    // Days since 2000-01-01 → calendar date (exact: |days| * MSECS_IN_DAY
+    // is far below 2^53)
+    const jsDate = new Date(Number(days) * MSECS_IN_DAY + UT_EPOCH_SHIFT_MS);
+    const year = String(jsDate.getUTCFullYear()).padStart(4, '0');
+    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(jsDate.getUTCDate()).padStart(2, '0');
+
+    const secs = span / BigInt(1000000000);
+    const nanos = span % BigInt(1000000000);
+    const hours = String(secs / BigInt(3600)).padStart(2, '0');
+    const minutes = String((secs % BigInt(3600)) / BigInt(60)).padStart(2, '0');
+    const seconds = String(secs % BigInt(60)).padStart(2, '0');
+    const nanosStr = String(nanos).padStart(9, '0');
+
+    return `${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}`;
+}
+
+/**
  * Format a Rayforce Timestamp (YYYY.MM.DDDHH:MM:SS.nnnnnnnnn)
  * Based on timestamp_fmt_into in format.c
  */
 function formatTimestamp(timestamp: RayforceTimestamp): string {
-    // Convert nanoseconds since 2000-01-01 to milliseconds
-    const milliseconds = Number(timestamp.value / BigInt(1000000));
-    const jsDate = new Date(milliseconds + UT_EPOCH_SHIFT_MS);
-    
-    const year = jsDate.getUTCFullYear();
-    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(jsDate.getUTCDate()).padStart(2, '0');
-    const hours = String(jsDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(jsDate.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(jsDate.getUTCSeconds()).padStart(2, '0');
-    
-    // Extract nanoseconds from the original value
-    const nanos = Number(timestamp.value % BigInt(1000000000));
-    const nanosStr = String(nanos).padStart(9, '0');
-    
-    return `${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}`;
+    return formatTimestampString(timestamp.value);
 }
 
 /**

@@ -3,7 +3,7 @@
  * Renders Rayforce types as beautiful HTML for the REPL webview
  */
 
-import { RayforceValue, RayforceTable, RayforceDict, RayforceError, RayforceDate, RayforceTime, RayforceTimestamp } from './rayforceIpc';
+import { RayforceValue, RayforceTable, RayforceDict, RayforceError, RayforceDate, RayforceTime, RayforceTimestamp, formatTimestampString } from './rayforceIpc';
 
 // ============================================================================
 // Configuration
@@ -475,23 +475,8 @@ function formatTimestampHtml(timestamp: RayforceTimestamp): string {
     if (timestamp.value === NULL_I64) {
         return `<span class="rf-null">0Np</span>`;
     }
-    
-    // Convert nanoseconds since 2000-01-01 to milliseconds
-    const milliseconds = Number(timestamp.value / BigInt(1000000));
-    const jsDate = new Date(milliseconds + UT_EPOCH_SHIFT_MS);
-    
-    const year = jsDate.getUTCFullYear();
-    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(jsDate.getUTCDate()).padStart(2, '0');
-    const hours = String(jsDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(jsDate.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(jsDate.getUTCSeconds()).padStart(2, '0');
-    
-    // Extract nanoseconds from the original value
-    const nanos = Number(timestamp.value % BigInt(1000000000));
-    const nanosStr = String(nanos).padStart(9, '0');
-    
-    return `<span class="rf-timestamp">${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}</span>`;
+
+    return `<span class="rf-timestamp">${formatTimestampString(timestamp.value)}</span>`;
 }
 
 // Format RayforceDate object (plain text)
@@ -538,23 +523,8 @@ function formatTimestampText(timestamp: RayforceTimestamp): string {
     if (timestamp.value === NULL_I64) {
         return '0Np';
     }
-    
-    // Convert nanoseconds since 2000-01-01 to milliseconds
-    const milliseconds = Number(timestamp.value / BigInt(1000000));
-    const jsDate = new Date(milliseconds + UT_EPOCH_SHIFT_MS);
-    
-    const year = jsDate.getUTCFullYear();
-    const month = String(jsDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(jsDate.getUTCDate()).padStart(2, '0');
-    const hours = String(jsDate.getUTCHours()).padStart(2, '0');
-    const minutes = String(jsDate.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(jsDate.getUTCSeconds()).padStart(2, '0');
-    
-    // Extract nanoseconds from the original value
-    const nanos = Number(timestamp.value % BigInt(1000000000));
-    const nanosStr = String(nanos).padStart(9, '0');
-    
-    return `${year}.${month}.${day}D${hours}:${minutes}:${seconds}.${nanosStr}`;
+
+    return formatTimestampString(timestamp.value);
 }
 
 function formatArray(arr: RayforceValue[], config: PrettyPrintConfig, depth: number, pagination?: PaginationInfo): string {

@@ -265,6 +265,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test:format": "node scripts/test-format.js",
     "package": "vsce package"
   },
   "devDependencies": {
