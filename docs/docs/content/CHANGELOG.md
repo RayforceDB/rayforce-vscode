@@ -6,6 +6,15 @@ All notable changes to RayforceDB VS Code Extension will be documented in this f
     You can also subscribe for release notifications by joining our [:simple-zulip: Zulip](https://rayforcedb.zulipchat.com/#narrow/channel/549008-Discuss)!
 
 
+## **`0.5.0`**
+
+- Added support for Rayforce wire protocol v3
+- REPL now shows the actual remote host in the panel title and status bar
+- Fixed rendering of pre-2000 (negative) timestamps
+
+2026-07-20 | **[🔗 VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode)** | **[🔗 GitHub](https://github.com/RayforceDB/rayforce-vscode/releases/tag/0.5.0)**
+
+
 ## **`0.4.1`**
 
 - Visual improvements to the Marketplace page
