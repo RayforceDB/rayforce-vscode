@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { RayforceIpcClient, isError, RayforceValue, RayforceDict, RayforceError } from './rayforceIpc';
+import { RayforceIpcClient, AuthRequiredError, isError, RayforceValue, RayforceDict, RayforceError } from './rayforceIpc';
 import { formatValueHtml, formatValueText, getPrettyPrintStyles, detectType, defaultConfig, PaginationInfo } from './prettyPrint';
 
 interface EnvEntry {
@@ -115,7 +115,23 @@ export class RayforceReplPanel {
         this.port = port;
 
         try {
-            await newClient.connect(5000);
+            try {
+                await newClient.connect(5000);
+            } catch (err) {
+                // Server requires credentials: prompt once and retry
+                if (!(err instanceof AuthRequiredError) || this.connectionVersion !== currentVersion) {
+                    throw err;
+                }
+                const password = await vscode.window.showInputBox({
+                    prompt: `Password for ${host}:${port}`,
+                    password: true,
+                    ignoreFocusOut: true
+                });
+                if (password === undefined || this.connectionVersion !== currentVersion) {
+                    throw err;
+                }
+                await newClient.connect(5000, { password });
+            }
 
             // If connection changed while we were connecting, clean up this connection
             if (this.connectionVersion !== currentVersion) {
@@ -228,31 +244,38 @@ export class RayforceReplPanel {
         }
 
         try {
-            // Batch request: get keys and types in just 2 IPC calls instead of N+1
-            const keysResult = await this.ipcClient.execute('(key (env))');
-            
+            // Batch request: get names and types in just 2 IPC calls instead
+            // of N+1.  `env` is a unary builtin — the argument is ignored.
+            const keysResult = await this.ipcClient.execute('(key (env 0))');
+
             if (this.connectionVersion !== currentVersion) return;
 
-            // Get all types in one call using (map type (value (env)))
-            const typesResult = await this.ipcClient.execute('(map type (value (env)))');
-            
+            const typesResult = await this.ipcClient.execute('(map type (value (env 0)))');
+
             if (this.connectionVersion !== currentVersion) return;
 
-            // Parse keys (list of symbols)
-            const keys = this.parseEnvKeys(keysResult);
-            
-            // Parse types (list of symbols in same order as keys)
-            const types = this.parseEnvTypes(typesResult);
+            // Names and types arrive in the same env order — pair them up
+            // before any filtering or sorting so they stay aligned
+            const names = this.parseSymbolList(keysResult);
+            const types = this.parseSymbolList(typesResult);
 
-            // Zip keys and types together
             const entries: EnvEntry[] = [];
-            for (let i = 0; i < keys.length; i++) {
+            for (let i = 0; i < names.length; i++) {
+                const name = names[i];
+                const type = types[i] || '?';
+                // Skip internal namespaces (.sys, .ipc, ...) and builtins
+                // (type '?') — the panel lists user-defined bindings
+                if (name.startsWith('.') || type === '?') {
+                    continue;
+                }
                 entries.push({
-                    name: keys[i],
-                    type: types[i] || '?',
+                    name,
+                    type,
                     value: '' // Don't fetch value - only fetch on inspect
                 });
             }
+
+            entries.sort((a, b) => a.name.localeCompare(b.name));
 
             this.envData = entries;
         } catch {
@@ -263,48 +286,23 @@ export class RayforceReplPanel {
         this.updateWebview();
     }
 
-    private parseEnvTypes(result: RayforceValue): string[] {
-        const types: string[] = [];
-        
-        if (Array.isArray(result)) {
-            for (const item of result) {
-                if (typeof item === 'symbol') {
-                    types.push(Symbol.keyFor(item) || String(item).replace('Symbol(', '').replace(')', ''));
-                } else if (typeof item === 'string') {
-                    types.push(item);
-                } else {
-                    types.push(String(item));
-                }
-            }
-        }
-        
-        return types;
-    }
+    private parseSymbolList(result: RayforceValue): string[] {
+        const items: string[] = [];
 
-    private parseEnvKeys(result: RayforceValue): string[] {
-        const keys: string[] = [];
-        
         if (Array.isArray(result)) {
             for (const item of result) {
-                let name: string | null = null;
                 if (typeof item === 'symbol') {
                     // Rayfall symbols are JavaScript Symbol primitives
-                    name = Symbol.keyFor(item) || String(item);
+                    items.push(Symbol.keyFor(item) || String(item));
                 } else if (typeof item === 'string') {
-                    name = item;
-                }
-                
-                // Skip internal/system variables (starting with .)
-                if (name && !name.startsWith('.')) {
-                    keys.push(name);
+                    items.push(item);
+                } else {
+                    items.push(String(item));
                 }
             }
         }
-        
-        // Sort alphabetically
-        keys.sort((a, b) => a.localeCompare(b));
-        
-        return keys;
+
+        return items;
     }
 
     private parseTypeName(result: RayforceValue): string {
@@ -340,7 +338,7 @@ export class RayforceReplPanel {
             if (this.connectionVersion !== currentVersion) return;
 
             // Check for wrapper parse errors
-            if (isError(result) && (result as RayforceError).code === 2) {
+            if (isError(result) && (result as RayforceError).code === 'parse') {
                 useRawFallback = true;
             } else if (!useRawFallback) {
                 let actualResult: RayforceValue = result;
@@ -517,8 +515,8 @@ export class RayforceReplPanel {
             // Check if the wrapper itself caused a parse error - fall back to raw
             if (isError(result)) {
                 const errResult = result as RayforceError;
-                // Parse errors (code 2) likely mean wrapper syntax issue - try raw
-                if (errResult.code === 2) {
+                // Parse errors likely mean wrapper syntax issue - try raw
+                if (errResult.code === 'parse') {
                     useRawFallback = true;
                 } else {
                     // Other errors are from the user's command, show them
