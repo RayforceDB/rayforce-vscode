@@ -153,6 +153,41 @@ async function testValues(client) {
         wrapped[2] && wrapped[2]._type === 'table' && wrapped[2].values[0].length === 10, show(wrapped && wrapped[0]));
 }
 
+async function testConcurrency(client) {
+    const N = 10;
+    const promises = [];
+    for (let i = 0; i < N; i++) {
+        // Deliberately not awaited here: firing all N execute() calls back
+        // to back (before any response comes back) is exactly the pattern
+        // that hit the single pendingResolve/pendingReject slot — a double
+        // Enter in the REPL, or a pagination click while refreshEnv() is
+        // still awaiting its own request.  A short per-call timeout keeps a
+        // regression (misattributed/dropped responses hang until timeout)
+        // from stalling the whole suite.
+        promises.push(client.execute(`(* ${i} ${i})`, 3000));
+    }
+
+    const results = await Promise.allSettled(promises);
+
+    let allMatched = true;
+    const detail = [];
+    for (let i = 0; i < N; i++) {
+        const r = results[i];
+        const want = BigInt(i * i);
+        const got = r.status === 'fulfilled' ? r.value : `rejected: ${r.reason && r.reason.message}`;
+        if (!(r.status === 'fulfilled' && got === want)) {
+            allMatched = false;
+        }
+        detail.push(`${i}->${show(got)}`);
+    }
+    ok(`${N} concurrent execute() calls each resolve to their own result`, allMatched, detail.join(' '));
+
+    // The queue must also drain fully afterward — a stuck currentRequest
+    // would silently swallow every call made after this test
+    const after = await client.execute('(+ 100 1)');
+    ok('client usable after concurrent burst', after === 101n, show(after));
+}
+
 async function testAuth(port) {
     const noCreds = new RayforceIpcClient(HOST, port);
     try {
@@ -201,6 +236,7 @@ async function main() {
         console.log('Connected (handshake v3).');
 
         await testValues(client);
+        await testConcurrency(client);
         client.disconnect();
 
         console.log('Auth handshake:');
