@@ -22,7 +22,7 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
         this.view = webviewView;
 
         webviewView.webview.options = {
-            enableScripts: true,
+            enableScripts: false,
             localResourceRoots: [this.extensionUri]
         };
 
@@ -50,6 +50,10 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
         const logoBlackUri = this.view?.webview.asWebviewUri(
             vscode.Uri.joinPath(this.extensionUri, 'assets', 'logo_black.svg')
         );
+        const styleUri = this.view?.webview.asWebviewUri(
+            vscode.Uri.joinPath(this.extensionUri, 'assets', 'processInfo.css')
+        );
+        const cspSource = this.view?.webview.cspSource || '';
 
         if (!this.connectedInstance) {
             return `<!DOCTYPE html>
@@ -57,33 +61,10 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: var(--vscode-font-family);
-            font-size: var(--vscode-font-size);
-            padding: 16px;
-            color: var(--vscode-foreground);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 120px;
-        }
-        .empty-state {
-            text-align: center;
-            opacity: 0.6;
-        }
-        .empty-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-        }
-        .empty-text {
-            font-size: 12px;
-            color: var(--vscode-descriptionForeground);
-        }
-    </style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource}; style-src ${cspSource}; script-src 'none';">
+    <link href="${styleUri}" rel="stylesheet">
 </head>
-<body>
+<body class="empty-body">
     <div class="empty-state">
         <div class="empty-icon">○</div>
         <div class="empty-text">No instance connected</div>
@@ -101,93 +82,8 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: var(--vscode-font-family);
-            font-size: var(--vscode-font-size);
-            padding: 12px 16px;
-            color: var(--vscode-foreground);
-            margin: 0;
-        }
-
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--vscode-panel-border);
-        }
-
-        .logo {
-            width: 24px;
-            height: 24px;
-        }
-
-        .logo-light { display: none; }
-        .logo-dark { display: block; }
-        body.vscode-light .logo-light { display: block; }
-        body.vscode-light .logo-dark { display: none; }
-
-        .header-info {
-            flex: 1;
-        }
-
-        .instance-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--vscode-foreground);
-            margin-bottom: 4px;
-        }
-
-        .instance-type {
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: var(--vscode-testing-iconPassed, #4caf50);
-            border-radius: 50%;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .info-section {
-            margin-top: 12px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid var(--vscode-panel-border);
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-size: 11px;
-            color: var(--vscode-descriptionForeground);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-value {
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--vscode-foreground);
-            font-family: var(--vscode-editor-font-family, monospace);
-        }
-    </style>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource}; style-src ${cspSource}; script-src 'none';">
+    <link href="${styleUri}" rel="stylesheet">
 </head>
 <body>
     <div class="header">
@@ -211,7 +107,7 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
         </div>
         <div class="info-item">
             <span class="info-label">Status</span>
-            <span class="info-value" style="color: var(--vscode-testing-iconPassed, #4caf50)">● Connected</span>
+            <span class="info-value status-connected">● Connected</span>
         </div>
     </div>
 </body>
@@ -227,4 +123,3 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
             .replace(/'/g, '&#039;');
     }
 }
-

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { randomBytes } from 'crypto';
 import { RayforceIpcClient, AuthRequiredError, isError, RayforceValue, RayforceDict, RayforceError } from './rayforceIpc';
 import { formatValueHtml, formatValueText, getPrettyPrintStyles, detectType, defaultConfig, PaginationInfo } from './prettyPrint';
 
@@ -32,6 +33,7 @@ export class RayforceReplPanel {
     private port: number | null = null;
     private history: HistoryEntry[] = [];
     private envData: EnvEntry[] = [];
+    private envError: string | null = null;
     private showEnv: boolean = true;
     private envWidth: number = 280;
     private connectionVersion: number = 0;  // Track connection changes to abort stale operations
@@ -156,6 +158,7 @@ export class RayforceReplPanel {
             this.host = null;
             this.port = null;
             this.envData = [];
+            this.envError = null;
             this.updateWebview();
             throw err;
         }
@@ -173,6 +176,7 @@ export class RayforceReplPanel {
         this.host = null;
         this.port = null;
         this.envData = [];
+        this.envError = null;
     }
 
     public isConnected(): boolean {
@@ -233,12 +237,14 @@ export class RayforceReplPanel {
 
         if (!this.ipcClient) {
             this.envData = [];
+            this.envError = null;
             this.updateWebview();
             return;
         }
         
         if (!this.ipcClient.isConnected()) {
             this.envData = [];
+            this.envError = null;
             this.updateWebview();
             return;
         }
@@ -249,10 +255,22 @@ export class RayforceReplPanel {
             const keysResult = await this.ipcClient.execute('(key (env 0))');
 
             if (this.connectionVersion !== currentVersion) return;
+            if (isError(keysResult)) {
+                this.envData = [];
+                this.envError = this.formatEnvError(keysResult);
+                this.updateWebview();
+                return;
+            }
 
             const typesResult = await this.ipcClient.execute('(map type (value (env 0)))');
 
             if (this.connectionVersion !== currentVersion) return;
+            if (isError(typesResult)) {
+                this.envData = [];
+                this.envError = this.formatEnvError(typesResult);
+                this.updateWebview();
+                return;
+            }
 
             // Names and types arrive in the same env order — pair them up
             // before any filtering or sorting so they stay aligned
@@ -278,12 +296,18 @@ export class RayforceReplPanel {
             entries.sort((a, b) => a.name.localeCompare(b.name));
 
             this.envData = entries;
+            this.envError = null;
         } catch {
             if (this.connectionVersion !== currentVersion) return;
             this.envData = [];
+            this.envError = 'Environment unavailable';
         }
 
         this.updateWebview();
+    }
+
+    private formatEnvError(error: RayforceError): string {
+        return `Environment unavailable: ${error.message || error.code}`;
     }
 
     private parseSymbolList(result: RayforceValue): string[] {
@@ -624,6 +648,8 @@ export class RayforceReplPanel {
         const logoWhiteUri = this.panel.webview.asWebviewUri(
             vscode.Uri.joinPath(this.extensionUri, 'assets', 'logo_white.svg')
         );
+        const cspSource = this.panel.webview.cspSource;
+        const nonce = randomBytes(16).toString('base64');
 
         const historyHtml = this.history.map(item => {
             if (item.isSystem) {
@@ -659,14 +685,16 @@ export class RayforceReplPanel {
                 return '';
             }
         }).join('');
+        const envHtml = this.renderEnvContent(isConnected);
 
         return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src ${cspSource}; style-src ${cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
     <title>Rayfall REPL</title>
-    <style>
+    <style nonce="${nonce}">
         ${getPrettyPrintStyles()}
         
         :root {
@@ -847,6 +875,10 @@ export class RayforceReplPanel {
             text-align: center;
             color: var(--text-secondary);
             font-size: 12px;
+        }
+
+        .env-empty.error {
+            color: var(--error);
         }
 
         .status {
@@ -1199,11 +1231,11 @@ export class RayforceReplPanel {
                 <span class="status-text">${isConnected ? this.escapeHtml(`${this.host}:${this.port}`) : 'Disconnected'}</span>
             </div>
             <div class="header-actions">
-                <button class="header-btn ${this.showEnv ? 'active' : ''}" onclick="toggleEnv()" title="Toggle Environment Panel">
+                <button class="header-btn ${this.showEnv ? 'active' : ''}" data-action="toggle-env" title="Toggle Environment Panel">
                     ${this.showEnv ? '▶ Env' : 'Env ◀'}
                 </button>
-                <button class="header-btn" onclick="clearHistory()">Clear</button>
-                ${isConnected ? '<button class="header-btn" onclick="disconnect()">Disconnect</button>' : ''}
+                <button class="header-btn" data-action="clear-history">Clear</button>
+                ${isConnected ? '<button class="header-btn" data-action="disconnect">Disconnect</button>' : ''}
             </div>
         </div>
 
@@ -1238,7 +1270,7 @@ export class RayforceReplPanel {
                             spellcheck="false"
                         />
                     </div>
-                    <button class="submit-btn" onclick="executeCommand()" ${isConnected ? '' : 'disabled'}>
+                    <button class="submit-btn" data-action="execute-command" ${isConnected ? '' : 'disabled'}>
                         Run
                     </button>
                 </div>
@@ -1252,24 +1284,16 @@ export class RayforceReplPanel {
         <div class="env-header">
             <span class="env-title">Environment</span>
             <div class="env-actions">
-                <button class="env-btn" onclick="refreshEnv()" title="Refresh">⟳</button>
+                <button class="env-btn" data-action="refresh-env" title="Refresh">⟳</button>
             </div>
         </div>
         <div class="env-content">
-            ${this.envData.length === 0
-                    ? `<div class="env-empty">${isConnected ? 'No variables defined' : 'Not connected'}</div>`
-                    : this.envData.map(entry => `
-                    <div class="env-item" onclick="inspectVar('${entry.name.replace(/'/g, "\\'")}')" title="${this.escapeHtml(entry.value)}">
-                        <span class="env-item-name">${this.escapeHtml(entry.name)}</span>
-                        <span class="env-item-type">${entry.type}</span>
-                    </div>
-                `).join('')
-                }
+            ${envHtml}
         </div>
     </div>
     ` : ''}
 
-    <script>
+    <script nonce="${nonce}">
         const vscode = acquireVsCodeApi();
         const input = document.getElementById('command-input');
         const history = document.getElementById('history');
@@ -1865,6 +1889,19 @@ export class RayforceReplPanel {
             vscode.postMessage({ command: 'refreshEnv' });
         }
 
+        document.querySelector('[data-action="toggle-env"]')?.addEventListener('click', toggleEnv);
+        document.querySelector('[data-action="clear-history"]')?.addEventListener('click', clearHistory);
+        document.querySelector('[data-action="disconnect"]')?.addEventListener('click', disconnect);
+        document.querySelector('[data-action="execute-command"]')?.addEventListener('click', executeCommand);
+        document.querySelector('[data-action="refresh-env"]')?.addEventListener('click', refreshEnv);
+
+        document.querySelectorAll('[data-inspect-var]').forEach((item) => {
+            item.addEventListener('click', () => {
+                const name = item.getAttribute('data-inspect-var');
+                if (name) inspectVar(name);
+            });
+        });
+
         // Environment panel resize
         const envPanel = document.getElementById('env-panel');
         const resizeHandle = document.getElementById('env-resize-handle');
@@ -2151,6 +2188,23 @@ export class RayforceReplPanel {
         return result;
     }
 
+    private renderEnvContent(isConnected: boolean): string {
+        if (this.envError) {
+            return `<div class="env-empty error">${this.escapeHtml(this.envError)}</div>`;
+        }
+
+        if (this.envData.length === 0) {
+            return `<div class="env-empty">${isConnected ? 'No variables defined' : 'Not connected'}</div>`;
+        }
+
+        return this.envData.map(entry => `
+                    <div class="env-item" data-inspect-var="${this.escapeHtml(entry.name)}" title="${this.escapeHtml(entry.value)}">
+                        <span class="env-item-name">${this.escapeHtml(entry.name)}</span>
+                        <span class="env-item-type">${this.escapeHtml(entry.type)}</span>
+                    </div>
+                `).join('');
+    }
+
     public dispose(): void {
         RayforceReplPanel.currentPanel = undefined;
 
@@ -2168,4 +2222,3 @@ export class RayforceReplPanel {
         }
     }
 }
-
