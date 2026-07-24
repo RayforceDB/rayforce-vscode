@@ -122,15 +122,23 @@ export class RayforceReplPanel {
                 if (!(err instanceof AuthRequiredError) || this.connectionVersion !== currentVersion) {
                     throw err;
                 }
+                const user = await vscode.window.showInputBox({
+                    prompt: `User for ${host}:${port}`,
+                    value: 'root',
+                    ignoreFocusOut: true
+                });
+                if (user === undefined || this.connectionVersion !== currentVersion) {
+                    throw err;
+                }
                 const password = await vscode.window.showInputBox({
-                    prompt: `Password for ${host}:${port}`,
+                    prompt: `Password for ${user || 'server'}@${host}:${port}`,
                     password: true,
                     ignoreFocusOut: true
                 });
                 if (password === undefined || this.connectionVersion !== currentVersion) {
                     throw err;
                 }
-                await newClient.connect(5000, { password });
+                await newClient.connect(5000, { user: user.trim() || undefined, password });
             }
 
             // If connection changed while we were connecting, clean up this connection

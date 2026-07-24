@@ -182,6 +182,17 @@ async function testAuth(port) {
     } finally {
         goodCreds.disconnect();
     }
+
+    const userCreds = new RayforceIpcClient(HOST, port);
+    try {
+        await userCreds.connect(3000, { user: 'root', password: 'testpw' });
+        const v = await userCreds.execute('(+ 2 3)');
+        ok('auth: accepted with user and password', v === 5n, show(v));
+    } catch (err) {
+        ok('auth: accepted with user and password', false, err.message);
+    } finally {
+        userCreds.disconnect();
+    }
 }
 
 async function main() {
