@@ -687,6 +687,13 @@ class Deserializer {
 // IPC Client
 // ============================================================================
 
+interface PendingRequest {
+    statement: string;
+    timeout: number;
+    resolve: (value: RayforceValue) => void;
+    reject: (reason: Error) => void;
+}
+
 export class RayforceIpcClient {
     private socket: net.Socket | null = null;
     private host: string;
@@ -695,6 +702,17 @@ export class RayforceIpcClient {
     private responseBuffer: Buffer = Buffer.alloc(0);
     private pendingResolve: ((value: RayforceValue) => void) | null = null;
     private pendingReject: ((reason: Error) => void) | null = null;
+
+    // The wire protocol carries no request id: a RESP is correlated to a
+    // request purely by being the next thing to arrive on the socket after
+    // it was sent.  So at most one SYNC request may be in flight at a time;
+    // concurrent execute() callers (e.g. a second command submitted before
+    // the first one's result comes back) are queued and sent one by one,
+    // instead of clobbering the single pendingResolve/pendingReject slot
+    // and misattributing the next response to the wrong caller.
+    private requestQueue: PendingRequest[] = [];
+    private currentRequest: PendingRequest | null = null;
+    private currentTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
 
     constructor(host: string, port: number) {
         this.host = host;
@@ -739,12 +757,8 @@ export class RayforceIpcClient {
                 settle(() => {
                     reject(new Error('Connection closed'));
                 });
-                // Also handle pending execute operations
-                if (this.pendingReject) {
-                    this.pendingReject(new Error('Connection closed'));
-                    this.pendingResolve = null;
-                    this.pendingReject = null;
-                }
+                // Also settle the in-flight request and drain the queue
+                this.rejectAll(new Error('Connection closed'));
             });
 
             // Handshake: send [version, 0]; server replies [version, auth_required].
@@ -832,13 +846,11 @@ export class RayforceIpcClient {
     }
 
     disconnect(): void {
-        // Clear pending operations first
-        if (this.pendingReject) {
-            this.pendingReject(new Error('Disconnected'));
-        }
-        this.pendingResolve = null;
-        this.pendingReject = null;
-        
+        // Clear the in-flight request and drain anything still queued —
+        // otherwise a queued caller would hang until its own timeout fires
+        // on a socket that will never receive a reply.
+        this.rejectAll(new Error('Disconnected'));
+
         if (this.socket) {
             this.socket.removeAllListeners();
             this.socket.destroy();
@@ -852,40 +864,109 @@ export class RayforceIpcClient {
         return this.connected && this.socket !== null;
     }
 
+    /**
+     * Reject the in-flight request (if any) and every queued request.
+     * Clears state directly rather than going through the pendingReject
+     * wire-closure, so this never re-enters pumpQueue() and tries to write
+     * to a socket that's mid-teardown — after a disconnect there is nothing
+     * left to pump until a future execute() call starts a new request.
+     */
+    private rejectAll(err: Error): void {
+        if (this.currentTimeoutHandle) {
+            clearTimeout(this.currentTimeoutHandle);
+            this.currentTimeoutHandle = null;
+        }
+        const current = this.currentRequest;
+        this.currentRequest = null;
+        this.pendingResolve = null;
+        this.pendingReject = null;
+
+        const queued = this.requestQueue;
+        this.requestQueue = [];
+
+        if (current) {
+            current.reject(err);
+        }
+        for (const req of queued) {
+            req.reject(err);
+        }
+    }
+
     async execute(statement: string, timeout: number = 30000): Promise<RayforceValue> {
         if (!this.isConnected()) {
             throw new Error('Not connected to Rayforce instance');
         }
 
         return new Promise((resolve, reject) => {
-            const timeoutHandle = setTimeout(() => {
-                this.pendingResolve = null;
-                this.pendingReject = null;
-                reject(new Error(`Execution timeout after ${timeout}ms`));
-            }, timeout);
-
-            this.pendingResolve = (value) => {
-                clearTimeout(timeoutHandle);
-                resolve(value);
-            };
-            
-            this.pendingReject = (err) => {
-                clearTimeout(timeoutHandle);
-                reject(err);
-            };
-
-            const payload = Serializer.serializeString(statement);
-            const message = Serializer.createMessage(payload, MSG_TYPE_SYNC);
-
-            this.socket!.write(message, (err) => {
-                if (err) {
-                    clearTimeout(timeoutHandle);
-                    this.pendingResolve = null;
-                    this.pendingReject = null;
-                    reject(err);
-                }
-            });
+            this.requestQueue.push({ statement, timeout, resolve, reject });
+            this.pumpQueue();
         });
+    }
+
+    /**
+     * Send the next queued request, if the wire is free.  Only one SYNC
+     * request may be outstanding at a time (see the requestQueue comment
+     * above), so this is a no-op while currentRequest is set; whichever
+     * settles the current request (response, timeout, or write error) calls
+     * finishCurrent(), which advances the queue.
+     */
+    private pumpQueue(): void {
+        if (this.currentRequest || this.requestQueue.length === 0) {
+            return;
+        }
+        if (!this.isConnected()) {
+            // Socket died between enqueue and pump.  rejectAll() already
+            // drains the queue on disconnect/'close', so this is normally
+            // unreachable — kept as a guard since this.socket!.write below
+            // would otherwise throw on a null socket.
+            this.rejectAll(new Error('Not connected to Rayforce instance'));
+            return;
+        }
+
+        const request = this.requestQueue.shift()!;
+        this.currentRequest = request;
+
+        this.currentTimeoutHandle = setTimeout(() => {
+            this.finishCurrent(request, () => request.reject(new Error(`Execution timeout after ${request.timeout}ms`)));
+        }, request.timeout);
+
+        this.pendingResolve = (value) => {
+            this.finishCurrent(request, () => request.resolve(value));
+        };
+
+        this.pendingReject = (err) => {
+            this.finishCurrent(request, () => request.reject(err));
+        };
+
+        const payload = Serializer.serializeString(request.statement);
+        const message = Serializer.createMessage(payload, MSG_TYPE_SYNC);
+
+        this.socket!.write(message, (err) => {
+            if (err) {
+                this.finishCurrent(request, () => request.reject(err));
+            }
+        });
+    }
+
+    /**
+     * Settle `request` and advance the queue.  A no-op if `request` is no
+     * longer the current one — guards against a stale timeout or write-error
+     * callback firing after rejectAll() already cleared it (e.g. the socket
+     * closed and a new request has since started).
+     */
+    private finishCurrent(request: PendingRequest, fn: () => void): void {
+        if (this.currentRequest !== request) {
+            return;
+        }
+        if (this.currentTimeoutHandle) {
+            clearTimeout(this.currentTimeoutHandle);
+            this.currentTimeoutHandle = null;
+        }
+        this.currentRequest = null;
+        this.pendingResolve = null;
+        this.pendingReject = null;
+        fn();
+        this.pumpQueue();
     }
 
     async executeAsync(statement: string): Promise<void> {
@@ -925,10 +1006,13 @@ export class RayforceIpcClient {
             if (!header) break;
 
             if (header.prefix !== SERDE_PREFIX) {
+                // pendingReject (if set) is the finishCurrent-wrapped closure
+                // installed by pumpQueue(): invoking it clears the fields and
+                // advances to the next queued request itself, so this must
+                // not also null them afterward — that would stomp on the
+                // next request's just-installed pendingResolve/pendingReject.
                 if (this.pendingReject) {
                     this.pendingReject(new Error('Invalid response prefix'));
-                    this.pendingResolve = null;
-                    this.pendingReject = null;
                 }
                 this.responseBuffer = Buffer.alloc(0);
                 break;
@@ -947,16 +1031,14 @@ export class RayforceIpcClient {
                 const deserializer = new Deserializer(payload);
                 const value = deserializer.deserialize();
 
+                // See the comment on the invalid-prefix branch above: these
+                // closures own clearing/advancing the queue themselves.
                 if (header.msgtype === MSG_TYPE_RESP && this.pendingResolve) {
                     this.pendingResolve(value);
-                    this.pendingResolve = null;
-                    this.pendingReject = null;
                 }
             } catch (err) {
                 if (this.pendingReject) {
                     this.pendingReject(err instanceof Error ? err : new Error(String(err)));
-                    this.pendingResolve = null;
-                    this.pendingReject = null;
                 }
             }
         }
