@@ -36,7 +36,7 @@ export class RayforceInstanceItem extends vscode.TreeItem {
                 `**Port:** \`${process.port}\`\n\n` +
                 `**PID:** \`${process.pid}\`\n\n` +
                 `**Command:** \`${process.command} ${process.args}\`\n\n` +
-                `---\n_Click to reconnect or use context menu_`
+                `---\n_Click to open REPL or use context menu_`
             );
             // Make connected instance more prominent
             this.resourceUri = vscode.Uri.parse(`rayforce://connected/${process.port}`);
@@ -54,11 +54,17 @@ export class RayforceInstanceItem extends vscode.TreeItem {
         
         this.contextValue = isConnected ? 'rayforceInstanceConnected' : 'rayforceInstance';
         
-        this.command = {
-            command: 'rayforce.connectToInstance',
-            title: 'Connect to Instance',
-            arguments: [this]
-        };
+        this.command = isConnected
+            ? {
+                command: 'rayforce.openRepl',
+                title: 'Open REPL',
+                arguments: [this]
+            }
+            : {
+                command: 'rayforce.connectToInstance',
+                title: 'Connect to Instance',
+                arguments: [this]
+            };
     }
 }
 
@@ -375,4 +381,3 @@ export class RayforceInstancesProvider implements vscode.TreeDataProvider<Instan
         this.statusBarItem.dispose();
     }
 }
-

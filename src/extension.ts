@@ -464,7 +464,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Register completion provider for Rayfall files
     const completionProvider = vscode.languages.registerCompletionItemProvider(
-        { language: 'rayfall' },
+        [
+            { scheme: 'file', language: 'rayfall' },
+            { scheme: 'untitled', language: 'rayfall' }
+        ],
         new RayforceCompletionProvider(),
         '(', "'", ' '  // Trigger on (, ', and space
     );
