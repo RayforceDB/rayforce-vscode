@@ -46,8 +46,13 @@ else
         print
         next
       }
-      # Stop collecting at next version entry
-      if (collecting && /^## \*\*\`/) {
+      # Stop collecting at next version entry.
+      # NB: match on "## **" only — do NOT put a backtick here. gawk (used by
+      # the Ubuntu CI runner) treats \` as the "start of buffer" operator, not
+      # a literal backtick, so a pattern like /^## \*\*\`/ never matches there
+      # and every following release gets swept into one message. BSD awk (macOS)
+      # reads \` as a literal backtick and works, which is why this diverged.
+      if (collecting && /^## \*\*/) {
         exit
       }
       # Collect lines while we are in the version section

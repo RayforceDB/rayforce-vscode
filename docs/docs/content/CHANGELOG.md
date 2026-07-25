@@ -6,6 +6,15 @@ All notable changes to RayforceDB VS Code Extension will be documented in this f
     You can also subscribe for release notifications by joining our [:simple-zulip: Zulip](https://rayforcedb.zulipchat.com/#narrow/channel/549008-Discuss)!
 
 
+## **`0.5.1`**
+
+- Fixed concurrent REPL commands corrupting each other's output — requests to an instance are now serialized through a queue so each command reliably receives its own result
+- Connecting to an authenticated instance now prompts for a username in addition to a password
+- Environment panel now surfaces load errors instead of silently showing blank, and its refresh/toggle controls work under the webview Content Security Policy
+
+2026-07-25 | **[🔗 VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=RayforceDB.rayforce-vscode)** | **[🔗 GitHub](https://github.com/RayforceDB/rayforce-vscode/releases/tag/0.5.1)**
+
+
 ## **`0.5.0`**
 
 - Added support for Rayforce wire protocol v3
