@@ -147,10 +147,20 @@ async function testValues(client) {
         envIdx >= 0 ? `type ${show(envTypes[envIdx])}` : 'g_ipc_test not found');
 
     // The exact preview wrapper the REPL panel sends for large results
-    const wrapper = "((fn [] (let __pr_r (table ['n] (list (til 50)))) (let __pr_t (type __pr_r)) (let __pr_c (if (or (== __pr_t 'TABLE) (== __pr_t 'LIST)) (count __pr_r) 0)) (list __pr_c __pr_t (if (> __pr_c 10) (take __pr_r [0 10]) __pr_r))))";
+    const previewTypes = '[TABLE LIST B8 U8 I16 I32 I64 F32 F64 DATE TIME TIMESTAMP GUID SYMBOL STR STRING]';
+    const wrapper = `((fn [] (let __pr_r (table ['n] (list (til 50)))) (let __pr_t (type __pr_r)) (let __pr_is_coll (in __pr_t ${previewTypes})) (let __pr_c (if __pr_is_coll (count __pr_r) 0)) (list __pr_c __pr_t (if (and __pr_is_coll (> __pr_c 10)) (take __pr_r [0 10]) __pr_r))))`;
     const wrapped = await client.execute(wrapper);
     ok('REPL preview wrapper', Array.isArray(wrapped) && wrapped.length === 3 && Number(wrapped[0]) === 50 &&
         wrapped[2] && wrapped[2]._type === 'table' && wrapped[2].values[0].length === 10, show(wrapped && wrapped[0]));
+
+    const vectorWrapper = `((fn [] (let __pr_r (til 50)) (let __pr_t (type __pr_r)) (let __pr_is_coll (in __pr_t ${previewTypes})) (let __pr_c (if __pr_is_coll (count __pr_r) 0)) (list __pr_c __pr_t (if (and __pr_is_coll (> __pr_c 10)) (take __pr_r [0 10]) __pr_r))))`;
+    const wrappedVector = await client.execute(vectorWrapper);
+    ok('REPL preview wrapper truncates vectors', Array.isArray(wrappedVector) &&
+        Number(wrappedVector[0]) === 50 &&
+        Array.isArray(wrappedVector[2]) &&
+        wrappedVector[2].length === 10 &&
+        wrappedVector[2][9] === 9n,
+        show(wrappedVector));
 }
 
 async function testConcurrency(client) {
