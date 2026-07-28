@@ -116,6 +116,13 @@ export async function activate(context: vscode.ExtensionContext) {
         updateProcessInfo();
     });
 
+    const handleConnectError = async (err: unknown) => {
+        await checkActualConnection();
+        updateProcessInfo();
+        const message = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Failed to connect to Rayforce instance: ${message}`);
+    };
+
     const connectCommand = vscode.commands.registerCommand(
         'rayforce.connectToInstance',
         async (item: RayforceInstanceItem) => {
@@ -123,16 +130,18 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!item || !item.process || typeof item.process.port !== 'number') {
                 return;
             }
-            const result = await instancesProvider.connectToInstance(item);
-            if (result.success) {
-                const panel = RayforceReplPanel.createOrShow(context.extensionUri);
-                try {
-                    await panel.connect(result.host, result.port);
+            const panel = RayforceReplPanel.createOrShow(context.extensionUri);
+            try {
+                await panel.connect('localhost', item.process.port);
+                const result = await instancesProvider.connectToInstance(item);
+                if (result.success) {
                     setTimeout(() => {
                         checkActualConnection();
                         updateProcessInfo();
                     }, 500);
-                } catch (err) {}
+                }
+            } catch (err) {
+                await handleConnectError(err);
             }
         }
     );
@@ -143,18 +152,20 @@ export async function activate(context: vscode.ExtensionContext) {
             if (!item || !item.instance || typeof item.instance.port !== 'number') {
                 return;
             }
-            const result = await savedInstancesProvider.connectToInstance(item);
-            if (result.success) {
-                // Sync to instances provider
-                instancesProvider.setConnectionState(result.host, result.port, true);
-                const panel = RayforceReplPanel.createOrShow(context.extensionUri);
-                try {
-                    await panel.connect(result.host, result.port);
+            const panel = RayforceReplPanel.createOrShow(context.extensionUri);
+            try {
+                await panel.connect(item.instance.host, item.instance.port);
+                const result = await savedInstancesProvider.connectToInstance(item);
+                if (result.success) {
+                    // Sync to instances provider
+                    instancesProvider.setConnectionState(result.host, result.port, true);
                     setTimeout(() => {
                         checkActualConnection();
                         updateProcessInfo();
                     }, 500);
-                } catch (err) {}
+                }
+            } catch (err) {
+                await handleConnectError(err);
             }
         }
     );
@@ -454,6 +465,8 @@ export async function activate(context: vscode.ExtensionContext) {
             const panel = RayforceReplPanel.createOrShow(context.extensionUri);
             try {
                 await panel.connect(selected.instance.host, selected.instance.port);
+                await checkActualConnection();
+                updateProcessInfo();
                 await panel.execute(text.trim());
             } catch (err) {
                 const message = err instanceof Error ? err.message : String(err);
