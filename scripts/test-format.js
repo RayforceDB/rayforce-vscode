@@ -54,5 +54,12 @@ for (const [value, want] of cases) {
 // Null timestamp still renders as the typed null literal
 check('formatValueText(0Np)', formatValueText(ts(-9223372036854775808n)), '0Np');
 
+// I64 vector nulls arrive over the wire as the typed-null sentinel.
+// Text formatting must preserve the Rayfall null literal instead of exposing
+// the implementation value.
+check('formatValue(0N sentinel)', formatValue(-9223372036854775808n), '0N');
+check('formatValueText(0N sentinel)', formatValueText(-9223372036854775808n), '0N');
+check('formatValueText([1 0N 3])', formatValueText([1n, -9223372036854775808n, 3n]), '[1 0N 3]');
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

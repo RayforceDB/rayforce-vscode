@@ -1857,6 +1857,7 @@ export class RayforceReplPanel {
             
             vscode.postMessage({ command: 'execute', text });
             input.value = '';
+            updateHighlight();
             saveState();
         }
 

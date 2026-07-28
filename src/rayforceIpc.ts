@@ -1068,6 +1068,7 @@ export function formatValue(value: RayforceValue): string {
     }
 
     if (typeof value === 'bigint') {
+        if (value === NULL_I64) return '0N';
         return String(value);
     }
 
@@ -1301,4 +1302,3 @@ function formatTimestamp(timestamp: RayforceTimestamp): string {
 export function isError(value: RayforceValue): value is RayforceError {
     return typeof value === 'object' && value !== null && '_type' in value && value._type === 'error';
 }
-
