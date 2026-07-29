@@ -400,9 +400,12 @@ export async function activate(context: vscode.ExtensionContext) {
             // Use property checks instead of instanceof (fails after serialization)
             const asLocal = item as RayforceInstanceItem | undefined;
             const asRemote = item as RemoteInstanceItem | undefined;
+            const asSaved = item as SavedInstanceTreeItem | undefined;
             
             if (asLocal?.process && typeof asLocal.process.port === 'number') {
                 try { await panel.connect('localhost', asLocal.process.port); } catch {}
+            } else if (asSaved?.instance && typeof asSaved.instance.port === 'number') {
+                try { await panel.connect(asSaved.instance.host, asSaved.instance.port); } catch {}
             } else if (!item) {
                 // Try saved instances first, then regular instances
                 let host = savedInstancesProvider.getConnectedHost();

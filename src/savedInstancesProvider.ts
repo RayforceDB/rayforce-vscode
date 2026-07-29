@@ -34,7 +34,7 @@ export class SavedInstanceTreeItem extends vscode.TreeItem {
                 `### 🟢 Connected Instance\n\n` +
                 `**Host:** \`${instance.host}\`\n\n` +
                 `**Port:** \`${instance.port}\`\n\n` +
-                `---\n_Click to reconnect or use context menu_`
+                `---\n_Click to open REPL or use context menu_`
             );
             // Make connected instance more prominent
             this.resourceUri = vscode.Uri.parse(`rayforce://connected/${instance.host}:${instance.port}`);
@@ -51,11 +51,17 @@ export class SavedInstanceTreeItem extends vscode.TreeItem {
         
         this.contextValue = isConnected ? 'savedInstanceConnected' : 'savedInstance';
         
-        this.command = {
-            command: 'rayforce.connectToSavedInstance',
-            title: 'Connect to Instance',
-            arguments: [this]
-        };
+        this.command = isConnected
+            ? {
+                command: 'rayforce.openRepl',
+                title: 'Open REPL',
+                arguments: [this]
+            }
+            : {
+                command: 'rayforce.connectToSavedInstance',
+                title: 'Connect to Instance',
+                arguments: [this]
+            };
     }
 }
 
@@ -488,6 +494,5 @@ export class SavedInstancesProvider implements vscode.TreeDataProvider<SavedInst
         return new SavedInstancesDragAndDropController(this);
     }
 }
-
 
 
