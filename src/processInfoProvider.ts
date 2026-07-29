@@ -90,7 +90,7 @@ export class ProcessInfoProvider implements vscode.WebviewViewProvider {
         <img src="${logoWhiteUri}" class="logo logo-dark" alt="Rayforce" />
         <img src="${logoBlackUri}" class="logo logo-light" alt="Rayforce" />
         <div class="header-info">
-            <div class="instance-label">${instanceLabel}</div>
+            <div class="instance-label">${this.escapeHtml(instanceLabel)}</div>
             <div class="instance-type">${instanceType}</div>
         </div>
         <div class="status-dot"></div>
