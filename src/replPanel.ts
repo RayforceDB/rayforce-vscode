@@ -450,8 +450,9 @@ export class RayforceReplPanel {
      */
     private wrapCommandForPreview(command: string): string {
         const maxRows = RayforceReplPanel.MAX_PREVIEW_ROWS;
+        const collectionTypes = '[TABLE LIST B8 U8 I16 I32 I64 F32 F64 DATE TIME TIMESTAMP GUID SYMBOL STR STRING]';
         // Rayfall: (take collection [start count]) takes count items from start index
-        return `((fn [] (let __pr_r ${command}) (let __pr_t (type __pr_r)) (let __pr_c (if (or (== __pr_t 'TABLE) (== __pr_t 'LIST)) (count __pr_r) 0)) (list __pr_c __pr_t (if (> __pr_c ${maxRows}) (take __pr_r [0 ${maxRows}]) __pr_r))))`;
+        return `((fn [] (let __pr_r ${command}) (let __pr_t (type __pr_r)) (let __pr_is_coll (in __pr_t ${collectionTypes})) (let __pr_c (if __pr_is_coll (count __pr_r) 0)) (list __pr_c __pr_t (if (and __pr_is_coll (> __pr_c ${maxRows})) (take __pr_r [0 ${maxRows}]) __pr_r))))`;
     }
 
     /**
@@ -459,8 +460,9 @@ export class RayforceReplPanel {
      * Uses (take collection [start count]) to slice directly.
      */
     private wrapCommandForPage(command: string, offset: number, pageSize: number): string {
+        const collectionTypes = '[TABLE LIST B8 U8 I16 I32 I64 F32 F64 DATE TIME TIMESTAMP GUID SYMBOL STR STRING]';
         // Rayfall: (take collection [start count]) takes count items from start index
-        return `((fn [] (let __pr_r ${command}) (let __pr_t (type __pr_r)) (let __pr_c (if (or (== __pr_t 'TABLE) (== __pr_t 'LIST)) (count __pr_r) 0)) (list __pr_c __pr_t (take __pr_r [${offset} ${pageSize}]))))`;
+        return `((fn [] (let __pr_r ${command}) (let __pr_t (type __pr_r)) (let __pr_is_coll (in __pr_t ${collectionTypes})) (let __pr_c (if __pr_is_coll (count __pr_r) 0)) (list __pr_c __pr_t (if __pr_is_coll (take __pr_r [${offset} ${pageSize}]) __pr_r))))`;
     }
 
     /**
