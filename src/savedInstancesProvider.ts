@@ -95,6 +95,15 @@ interface SavedInstancesData {
 const MIME_TYPE_INSTANCE = 'application/vnd.code.tree.rayforceSavedInstances.instance';
 const MIME_TYPE_FOLDER = 'application/vnd.code.tree.rayforceSavedInstances.folder';
 
+function isDraggedSavedItem(value: unknown): value is { type: 'instance' | 'folder'; id: string } {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+
+    const item = value as { type?: unknown; id?: unknown };
+    return (item.type === 'instance' || item.type === 'folder') && typeof item.id === 'string';
+}
+
 class SavedInstancesDragAndDropController implements vscode.TreeDragAndDropController<SavedInstanceItem> {
     dragMimeTypes: string[] = [MIME_TYPE_INSTANCE, MIME_TYPE_FOLDER];
     dropMimeTypes: string[] = [MIME_TYPE_INSTANCE, MIME_TYPE_FOLDER];
@@ -138,7 +147,16 @@ class SavedInstancesDragAndDropController implements vscode.TreeDragAndDropContr
         const transferItem = transferItemInstance || transferItemFolder;
         if (!transferItem) return;
 
-        const items: Array<{ type: 'instance' | 'folder'; id: string }> = JSON.parse(await transferItem.asString());
+        let items: Array<{ type: 'instance' | 'folder'; id: string }>;
+        try {
+            const parsed = JSON.parse(await transferItem.asString());
+            if (!Array.isArray(parsed) || !parsed.every(isDraggedSavedItem)) {
+                return;
+            }
+            items = parsed;
+        } catch {
+            return;
+        }
 
         // Determine target folder
         let targetFolderId: string | null = null;
