@@ -775,7 +775,10 @@ function formatCellValue(value: RayforceValue, config: PrettyPrintConfig): strin
 export function formatValueText(value: RayforceValue, config: PrettyPrintConfig = DEFAULT_CONFIG): string {
     if (value === null) return '::';
     if (typeof value === 'boolean') return value ? 'true' : 'false';
-    if (typeof value === 'bigint') return value.toString();
+    if (typeof value === 'bigint') {
+        if (value === NULL_I64) return '0N';
+        return value.toString();
+    }
     if (typeof value === 'number') {
         if (Number.isNaN(value)) return '0n';
         if (!Number.isFinite(value)) return value > 0 ? '0w' : '-0w';
@@ -911,4 +914,3 @@ function isHomogeneousArray(arr: RayforceValue[]): boolean {
 // ============================================================================
 
 export const defaultConfig = DEFAULT_CONFIG;
-
