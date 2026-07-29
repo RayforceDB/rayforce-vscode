@@ -341,8 +341,9 @@ export async function activate(context: vscode.ExtensionContext) {
             
             // Show folder picker only if folder wasn't specified
             const folders = savedInstancesProvider.getAllFolders();
-            const folderOptions: vscode.QuickPickItem[] = [
-                { label: '$(folder) Root level', description: 'Save to root' }
+            type FolderQuickPickItem = vscode.QuickPickItem & { folderId: string | null };
+            const folderOptions: FolderQuickPickItem[] = [
+                { label: '$(folder) Root level', description: 'Save to root', folderId: null }
             ];
             
             const buildFolderOptions = (parentId: string | null, indent: string = ''): void => {
@@ -350,7 +351,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 for (const folder of children.sort((a, b) => a.name.localeCompare(b.name))) {
                     folderOptions.push({
                         label: `${indent}${folder.name}`,
-                        description: 'Folder'
+                        description: 'Folder',
+                        folderId: folder.id
                     });
                     buildFolderOptions(folder.id, indent + '    ');
                 }
@@ -363,14 +365,7 @@ export async function activate(context: vscode.ExtensionContext) {
             });
             
             if (selected) {
-                let selectedFolderId: string | null = null;
-                if (selected.label !== '$(folder) Root level') {
-                    const folderName = selected.label.trim();
-                    const folder = folders.find(f => f.name === folderName);
-                    if (folder) {
-                        selectedFolderId = folder.id;
-                    }
-                }
+                const selectedFolderId = selected.folderId;
                 
                 if (instance.id) {
                     // Move existing instance
